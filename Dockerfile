@@ -34,6 +34,8 @@ WORKDIR /app
 # - Playwright Chromium 依赖的系统库
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
+    # git: requirements.txt 中含 git+https 直链(tradingagents)
+    git \
     # 中文字体
     fonts-noto-cjk \
     # Playwright Chromium 依赖
