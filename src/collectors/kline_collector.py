@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import contextvars
 import logging
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -14,6 +12,7 @@ import random
 import threading
 import time
 
+from src.collectors.market_http import fetch_source, source_suffix
 from src.core.cn_symbol import get_cn_prefix, is_cn_sh
 from src.models.market import MARKETS, MarketCode
 
@@ -30,28 +29,10 @@ _EASTMONEY_CACHE: dict[str, tuple[float, int, list["KlineData"]]] = {}
 _EASTMONEY_CACHE_TTL_SECONDS = 300
 
 
-# ── 调用来源标记 ───────────────────────────────────────────────────────────
-# K线失败日志只有出口、没有调用方,无法定位是哪个调度任务在"源源不断"地报错。
-# 调用方用 `with kline_source("xxx"):` 包裹,失败日志即带上 [src=xxx]。
-# asyncio.to_thread 会传播 contextvars,异步调度里设置也能透到 worker 线程。
-_KLINE_SOURCE: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "kline_source", default=""
-)
-
-
-@contextmanager
-def kline_source(name: str):
-    """标注当前 K线请求的调用来源,写入失败日志便于定位触发方。"""
-    token = _KLINE_SOURCE.set(name or "")
-    try:
-        yield
-    finally:
-        _KLINE_SOURCE.reset(token)
-
-
-def _source_suffix() -> str:
-    src = _KLINE_SOURCE.get()
-    return f" [src={src}]" if src else ""
+# 调用来源标记统一在 market_http(全项目共享一个 contextvar)。
+# 保留 kline_source / _source_suffix 名称,兼容已有调用方(schedulers 等)。
+kline_source = fetch_source
+_source_suffix = source_suffix
 
 
 # ── K线按市场状态缓存 ──────────────────────────────────────────────────────

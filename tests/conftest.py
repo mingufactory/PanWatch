@@ -56,13 +56,24 @@ def _mock_stock_link_platform(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _clear_kline_cache():
-    """清空 K线内存缓存,避免用例间互相污染(get_klines 现按市场状态缓存)。"""
-    from src.collectors import kline_collector
+def _clear_market_caches():
+    """清空采集层内存缓存,避免用例间互相污染(K线/报价/资金流等现按 TTL 缓存)。"""
+    from src.collectors import (
+        akshare_collector,
+        capital_flow_collector,
+        discovery_collector,
+        kline_collector,
+    )
 
-    kline_collector.clear_kline_cache()
+    def _clear():
+        kline_collector.clear_kline_cache()
+        akshare_collector._QUOTE_CACHE.clear()
+        capital_flow_collector._FLOW_CACHE.clear()
+        discovery_collector._DISCOVERY_CACHE.clear()
+
+    _clear()
     yield
-    kline_collector.clear_kline_cache()
+    _clear()
 
 
 # ---------------------------------------------------------------------------
