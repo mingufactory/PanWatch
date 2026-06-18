@@ -7,8 +7,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
+from datetime import datetime, timedelta, timezone
+
 from src.web.database import get_db
-from src.web.models import Account, Position, Stock
+from src.web.models import Account, PriceAlertRule, Position, Stock
 from src.collectors.akshare_collector import _tencent_symbol, _fetch_tencent_quotes
 from src.models.market import MarketCode
 
@@ -671,3 +673,54 @@ def portfolio_benchmark(
     if not res:
         return {"empty": True, "reason": "insufficient_data"}
     return res
+
+
+@router.get("/portfolio/todos")
+def portfolio_todos(db: Session = Depends(get_db)):
+    """首页空态待办:持仓但未设提醒 / 提醒即将到期(可行动,盘后也不空)。"""
+    todos: list[dict] = []
+    accounts = db.query(Account).filter(Account.enabled == True).all()  # noqa: E712
+    held_ids = {p.stock_id for acc in accounts for p in acc.positions}
+    if held_ids:
+        ruled = {
+            r.stock_id
+            for r in db.query(PriceAlertRule)
+            .filter(PriceAlertRule.enabled == True, PriceAlertRule.stock_id.in_(held_ids))  # noqa: E712
+            .all()
+        }
+        for sid in held_ids - ruled:
+            stock = db.query(Stock).filter(Stock.id == sid).first()
+            if stock:
+                todos.append(
+                    {
+                        "type": "no_alert",
+                        "symbol": stock.symbol,
+                        "market": stock.market,
+                        "message": f"{stock.name} 持仓中,未设价格提醒",
+                    }
+                )
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    soon = now + timedelta(days=3)
+    expiring = (
+        db.query(PriceAlertRule)
+        .filter(
+            PriceAlertRule.enabled == True,  # noqa: E712
+            PriceAlertRule.expire_at.isnot(None),
+            PriceAlertRule.expire_at >= now,
+            PriceAlertRule.expire_at <= soon,
+        )
+        .all()
+    )
+    for r in expiring:
+        stock = db.query(Stock).filter(Stock.id == r.stock_id).first()
+        todos.append(
+            {
+                "type": "alert_expiring",
+                "symbol": stock.symbol if stock else "",
+                "market": stock.market if stock else "CN",
+                "message": f"{(r.name or '提醒')} 即将到期",
+            }
+        )
+
+    return {"todos": todos[:10], "count": len(todos)}

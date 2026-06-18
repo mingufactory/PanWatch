@@ -4,12 +4,15 @@ import {
   dashboardApi,
   portfolioApi,
   recommendationsApi,
+  homeApi,
   type DashboardMarketIndex,
   type DashboardMonitorStock,
   type DashboardOverviewResponse,
   type PortfolioDiagnostics,
   type PortfolioBenchmark,
   type StrategySignalItem,
+  type AlertHitToday,
+  type PortfolioTodo,
 } from '@panwatch/api'
 import { Button } from '@panwatch/base-ui/components/ui/button'
 import { Onboarding } from '@panwatch/biz-ui/components/onboarding'
@@ -42,6 +45,8 @@ export default function DashboardPage() {
   const [diag, setDiag] = useState<PortfolioDiagnostics | null>(null)
   const [bench, setBench] = useState<PortfolioBenchmark | null>(null)
   const [oppFallback, setOppFallback] = useState<StrategySignalItem[]>([])
+  const [alertHits, setAlertHits] = useState<AlertHitToday[]>([])
+  const [todos, setTodos] = useState<PortfolioTodo[]>([])
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [modal, setModal] = useState<{ open: boolean; symbol: string; market: string; name: string; hasPosition: boolean }>({
     open: false,
@@ -53,18 +58,22 @@ export default function DashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [idx, sc, ov, dg, bn] = await Promise.allSettled([
+    const [idx, sc, ov, dg, bn, ht, td] = await Promise.allSettled([
       dashboardApi.indices(),
       dashboardApi.intradayScan(),
       dashboardApi.overview({ market: 'ALL', action_limit: 6, risk_limit: 6 }),
       portfolioApi.diagnostics(),
       portfolioApi.benchmark({ days: 60 }),
+      homeApi.alertHitsToday(),
+      homeApi.todos(),
     ])
     if (idx.status === 'fulfilled') setIndices(idx.value)
     if (sc.status === 'fulfilled') setScan(sc.value.stocks || [])
     if (ov.status === 'fulfilled') setOverview(ov.value)
     if (dg.status === 'fulfilled') setDiag(dg.value)
     if (bn.status === 'fulfilled') setBench(bn.value)
+    if (ht.status === 'fulfilled') setAlertHits(ht.value)
+    if (td.status === 'fulfilled') setTodos(td.value.todos || [])
     if (ov.status !== 'fulfilled' || !ov.value.action_center?.opportunities?.length) {
       try {
         const r = await recommendationsApi.listStrategySignals({ status: 'active', limit: 5 })
@@ -105,6 +114,10 @@ export default function DashboardPage() {
   const hasHoldings = (diag?.position_count ?? 0) > 0
   const benchReady = bench && !bench.empty && bench.excess_return != null
   const hasWatchlist = (overview?.kpis?.watchlist_count ?? 0) > 0
+  const portfolioPnlPct =
+    diag && diag.total_market_value - diag.total_unrealized_pnl > 0
+      ? (diag.total_unrealized_pnl / (diag.total_market_value - diag.total_unrealized_pnl)) * 100
+      : null
 
   return (
     <div className="page-container pb-10">
@@ -117,6 +130,18 @@ export default function DashboardPage() {
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+          {hasHoldings && portfolioPnlPct != null && (
+            <span className="flex items-center gap-1">
+              <span className="text-muted-foreground">组合浮盈</span>
+              <span className={`font-mono ${moveColor(portfolioPnlPct)}`}>{pct(portfolioPnlPct)}</span>
+            </span>
+          )}
+          {benchReady && (
+            <span className="flex items-center gap-1">
+              <span className="text-muted-foreground">超额</span>
+              <span className={`font-mono ${moveColor(bench!.excess_return)}`}>{pct(bench!.excess_return)}</span>
+            </span>
+          )}
           {indices.slice(0, 5).map((ix) => (
             <span key={`${ix.market}:${ix.symbol}`} className="flex items-center gap-1">
               <span className="text-muted-foreground">{ix.name}</span>
@@ -136,12 +161,48 @@ export default function DashboardPage() {
           <h2 className="text-sm font-semibold">今日要紧事</h2>
           <span className="text-[11px] text-muted-foreground">你的持仓/自选里今天该关注的</span>
         </div>
-        {loading && urgent.length === 0 ? (
+        {loading && alertHits.length === 0 && urgent.length === 0 ? (
           <div className="py-6 text-center text-[12px] text-muted-foreground">扫描中…</div>
-        ) : urgent.length === 0 ? (
-          <div className="py-6 text-center text-[12px] text-muted-foreground">今日暂无明显异动或触发信号 ✓</div>
+        ) : alertHits.length === 0 && urgent.length === 0 ? (
+          todos.length > 0 ? (
+            <div className="space-y-1.5 py-1">
+              <div className="text-[11px] text-muted-foreground">今日暂无异动/触发 ✓ · 待办:</div>
+              {todos.map((t, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2 py-1 text-[12px] ${t.symbol ? 'cursor-pointer hover:bg-accent/30' : ''}`}
+                  onClick={() => t.symbol && openStock(t.symbol, t.market || 'CN', '')}
+                >
+                  <span className="shrink-0 rounded bg-amber-500/15 px-1 text-[9px] text-amber-600">
+                    {t.type === 'no_alert' ? '加提醒' : '将到期'}
+                  </span>
+                  <span className="truncate">{t.message}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-6 text-center text-[12px] text-muted-foreground">今日暂无明显异动或触发信号 ✓</div>
+          )
         ) : (
           <div className="divide-y divide-border/40">
+            {alertHits.map((h) => (
+              <div
+                key={`hit-${h.rule_id}-${h.symbol}`}
+                className="flex cursor-pointer items-center gap-3 py-2 hover:bg-accent/30"
+                onClick={() => openStock(h.symbol, h.market, h.name, false)}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="shrink-0 rounded bg-rose-500/15 px-1 text-[9px] text-rose-500">提醒命中</span>
+                    <span className="truncate text-[13px] font-medium">{h.name || h.symbol}</span>
+                  </div>
+                  <div className="truncate text-[11px] text-muted-foreground">
+                    {h.rule_name}
+                    {h.trigger_time ? ` · ${h.trigger_time.slice(11, 16)}` : ''}
+                  </div>
+                </div>
+              </div>
+            ))}
             {urgent.map((s) => (
               <div
                 key={`${s.market}:${s.symbol}`}
