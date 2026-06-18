@@ -27,9 +27,12 @@ function load(): Promise<string> {
   return inflight
 }
 
-/** 保存头像(传空字符串=清空):持久化到后端 DB(ui_avatar)并广播,使所有头像处即时更新。 */
+/**
+ * 保存头像(传空字符串=清空):后端把图片落成 data/avatars 文件、DB 仅记文件名;
+ * 本地广播即时更新。注意 cache 存的是 data URL(GET 也返回 data URL)。
+ */
 export async function saveAvatar(value: string): Promise<void> {
-  await fetchAPI('/settings/ui_avatar', { method: 'PUT', body: JSON.stringify({ value }) })
+  await fetchAPI('/settings/avatar', { method: 'PUT', body: JSON.stringify({ value }) })
   cache = value
   window.dispatchEvent(new CustomEvent<string>(EVENT, { detail: value }))
 }
