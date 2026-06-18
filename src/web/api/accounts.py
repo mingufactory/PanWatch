@@ -724,3 +724,64 @@ def portfolio_todos(db: Session = Depends(get_db)):
         )
 
     return {"todos": todos[:10], "count": len(todos)}
+
+
+@router.get("/portfolio/attribution")
+def portfolio_attribution(days: int = 60, benchmark: str = "000300", db: Session = Depends(get_db)):
+    """近 days 日各持仓对组合收益的贡献(谁拖累/贡献),降序。"""
+    from src.core.portfolio_benchmark import DEFAULT_BENCHMARK, build_attribution
+
+    holdings = _gather_holdings(db)
+    if not holdings:
+        return {"items": []}
+    days = max(20, min(int(days), 250))
+    return {"items": build_attribution(holdings, days=days, benchmark_code=(benchmark or DEFAULT_BENCHMARK))}
+
+
+@router.post("/portfolio/ai-review")
+async def portfolio_ai_review(model_id: int | None = None, db: Session = Depends(get_db)):
+    """组合 AI 体检:诊断+基准+归因 → 叙述结论 + 调仓建议(只读,不下单)。"""
+    from src.core.portfolio_benchmark import build_attribution, build_portfolio_benchmark
+    from src.core.portfolio_diagnostics import diagnose_positions
+    from src.web.api.chat import _get_ai_client
+
+    holdings = _gather_holdings(db)
+    if not holdings:
+        return {"empty": True, "reason": "no_holdings"}
+
+    diag = diagnose_positions(holdings)
+    bench = build_portfolio_benchmark(holdings, days=60) or {}
+    attr = build_attribution(holdings, days=60)
+    top = attr[:3]
+    worst = list(reversed(attr[-3:])) if len(attr) > 3 else []
+
+    lines = [
+        f"持仓 {diag['position_count']} 只,总市值 {diag['total_market_value']:.0f},浮盈 {diag['total_unrealized_pnl']:.0f}",
+        f"集中度 HHI {diag['hhi']},最大单仓 {diag['max_weight'] * 100:.0f}%",
+    ]
+    if bench.get("excess_return") is not None:
+        lines.append(
+            f"近60日 vs {bench.get('benchmark_label', '基准')}:超额 {bench['excess_return']}%"
+            f"(组合 {bench.get('portfolio_return')}% / 基准 {bench.get('benchmark_return')}%),"
+            f"相对回撤 {bench.get('relative_drawdown')}%"
+        )
+    if diag.get("by_market"):
+        lines.append("市场分布:" + ", ".join(f"{k} {v:.0f}" for k, v in diag["by_market"].items()))
+    if diag.get("alerts"):
+        lines.append("风险提示:" + "; ".join(diag["alerts"]))
+    if top:
+        lines.append("贡献最大:" + ", ".join(f"{r['name']}({r['contribution_pct']:+.2f}%)" for r in top))
+    if worst:
+        lines.append("拖累最大:" + ", ".join(f"{r['name']}({r['contribution_pct']:+.2f}%)" for r in worst))
+
+    system_prompt = (
+        "你是稳健的组合顾问。基于给定的组合诊断/基准对比/个股归因,给一段简短体检 + 可执行调仓建议,"
+        "只读分析、不下单、不承诺收益。严格格式:\n体检: 一句话总评\n建议:\n- (2~3 条具体可执行)\n风险: 一句话最大风险"
+    )
+    user_content = "组合概况:\n" + "\n".join(lines)
+    try:
+        content = await _get_ai_client(db, model_id).chat(system_prompt, user_content, temperature=0.3)
+    except Exception as e:
+        raise HTTPException(502, f"AI 体检失败: {e}")
+
+    return {"content": content, "top": top, "worst": worst, "diagnostics": diag, "benchmark": bench}

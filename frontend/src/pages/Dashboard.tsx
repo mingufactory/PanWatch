@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { RefreshCw, AlertTriangle, Sparkles, Activity, ShieldAlert } from 'lucide-react'
 import {
   dashboardApi,
@@ -15,6 +16,8 @@ import {
   type PortfolioTodo,
   type CurateCandidate,
   type CuratedItem,
+  type AttributionItem,
+  type PortfolioAiReview,
 } from '@panwatch/api'
 import { Button } from '@panwatch/base-ui/components/ui/button'
 import { Onboarding } from '@panwatch/biz-ui/components/onboarding'
@@ -58,6 +61,9 @@ export default function DashboardPage() {
   const [alertHits, setAlertHits] = useState<AlertHitToday[]>([])
   const [todos, setTodos] = useState<PortfolioTodo[]>([])
   const [curated, setCurated] = useState<CuratedItem[]>([])
+  const [attribution, setAttribution] = useState<AttributionItem[]>([])
+  const [aiReview, setAiReview] = useState<PortfolioAiReview | null>(null)
+  const [aiReviewLoading, setAiReviewLoading] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [modal, setModal] = useState<{ open: boolean; symbol: string; market: string; name: string; hasPosition: boolean }>({
     open: false,
@@ -69,7 +75,7 @@ export default function DashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [idx, sc, ov, dg, bn, ht, td] = await Promise.allSettled([
+    const [idx, sc, ov, dg, bn, ht, td, at] = await Promise.allSettled([
       dashboardApi.indices(),
       dashboardApi.intradayScan(),
       dashboardApi.overview({ market: 'ALL', action_limit: 6, risk_limit: 6 }),
@@ -77,6 +83,7 @@ export default function DashboardPage() {
       portfolioApi.benchmark({ days: 60 }),
       homeApi.alertHitsToday(),
       homeApi.todos(),
+      portfolioApi.attribution(60),
     ])
     if (idx.status === 'fulfilled') setIndices(idx.value)
     if (sc.status === 'fulfilled') setScan(sc.value.stocks || [])
@@ -85,6 +92,7 @@ export default function DashboardPage() {
     if (bn.status === 'fulfilled') setBench(bn.value)
     if (ht.status === 'fulfilled') setAlertHits(ht.value)
     if (td.status === 'fulfilled') setTodos(td.value.todos || [])
+    if (at.status === 'fulfilled') setAttribution(at.value.items || [])
     if (ov.status !== 'fulfilled' || !ov.value.action_center?.opportunities?.length) {
       try {
         const r = await recommendationsApi.listStrategySignals({ status: 'active', limit: 5 })
@@ -108,6 +116,17 @@ export default function DashboardPage() {
 
   const openStock = (symbol: string, market: string, name = '', hasPosition = false) =>
     setModal({ open: true, symbol, market: market || 'CN', name, hasPosition })
+
+  const runAiReview = async () => {
+    setAiReviewLoading(true)
+    try {
+      setAiReview(await portfolioApi.aiReview())
+    } catch (e) {
+      setAiReview({ content: e instanceof Error ? `AI 体检失败: ${e.message}` : 'AI 体检失败' })
+    } finally {
+      setAiReviewLoading(false)
+    }
+  }
 
   // 今日要紧事:持仓异动 + 触发的盯盘信号(有 AI 建议/告警优先)
   const urgent = useMemo(() => {
@@ -320,6 +339,32 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="pt-1 text-[11px] text-emerald-500">✓ 集中度/分布未见明显风险</div>
+              )}
+              {attribution.length > 1 && (
+                <div className="flex justify-between pt-1 text-[11px] text-muted-foreground">
+                  <span>
+                    领涨 <span className={moveColor(attribution[0].contribution_pct)}>{attribution[0].name} {pct(attribution[0].contribution_pct)}</span>
+                  </span>
+                  <span>
+                    拖累{' '}
+                    <span className={moveColor(attribution[attribution.length - 1].contribution_pct)}>
+                      {attribution[attribution.length - 1].name} {pct(attribution[attribution.length - 1].contribution_pct)}
+                    </span>
+                  </span>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={runAiReview}
+                disabled={aiReviewLoading}
+                className="mt-1 w-full rounded border border-border/60 py-1 text-[11px] text-primary hover:bg-accent/30 disabled:opacity-60"
+              >
+                {aiReviewLoading ? 'AI 体检中…' : 'AI 体检报告'}
+              </button>
+              {aiReview?.content && (
+                <div className="prose prose-sm dark:prose-invert mt-1 max-w-none break-words text-[12px] [&_p]:my-1 [&_ul]:my-1">
+                  <ReactMarkdown>{aiReview.content}</ReactMarkdown>
+                </div>
               )}
             </div>
           )}
