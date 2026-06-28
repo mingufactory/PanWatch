@@ -281,7 +281,9 @@ def get_quote_orchestrator() -> QuoteOrchestrator:
         # 在这里注册所有内置 Quote provider。新增 provider 时在此追加一行。
         from src.core.providers.quote.tencent import TencentQuoteProvider
         from src.core.providers.quote.yfinance import YFinanceQuoteProvider
+        from src.core.providers.quote.finmind import FinMindQuoteProvider
 
+        orch.register("finmind", lambda cfg: FinMindQuoteProvider(config=cfg))
         orch.register("tencent", lambda cfg: TencentQuoteProvider(config=cfg))
         orch.register("yfinance", lambda cfg: YFinanceQuoteProvider(config=cfg))
         _quote_orchestrator = orch
@@ -300,7 +302,9 @@ def get_kline_orchestrator() -> KlineOrchestrator:
         from src.core.providers.kline.tencent import TencentKlineProvider
         from src.core.providers.kline.tushare import TushareKlineProvider
         from src.core.providers.kline.yfinance import YFinanceKlineProvider
+        from src.core.providers.kline.finmind import FinMindKlineProvider
 
+        orch.register("finmind", lambda cfg: FinMindKlineProvider(config=cfg))
         orch.register("tencent", lambda cfg: TencentKlineProvider(config=cfg))
         orch.register("tushare", lambda cfg: TushareKlineProvider(config=cfg))
         orch.register("yfinance", lambda cfg: YFinanceKlineProvider(config=cfg))

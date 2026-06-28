@@ -72,6 +72,18 @@ def _stub_sources(orch: QuoteOrchestrator, names: list[str]) -> None:
 
 
 class TestOrchestratorFallback(unittest.IsolatedAsyncioTestCase):
+    async def test_market_isolation_skips_tw_provider_for_cn(self):
+        orch = QuoteOrchestrator()
+        tw = _MockProvider("finmind", markets=("TW",))
+        cn = _MockProvider("tencent", markets=("CN",))
+        for provider in (tw, cn):
+            orch.register(provider.name, lambda cfg, p=provider: p)
+            orch._get_or_create_instance(provider.name, {})
+        _stub_sources(orch, ["finmind", "tencent"])
+        response = await orch.fetch(ProviderRequest(symbols=("600519",), market="CN"))
+        self.assertEqual(response.provider, "tencent")
+        self.assertEqual(tw.call_count, 0)
+
     async def test_primary_success(self):
         """主源成功 — 不应调用备份源"""
         orch = QuoteOrchestrator()

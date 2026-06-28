@@ -314,6 +314,12 @@ class KlineData:
     high: float
     low: float
     volume: float
+    provenance: str = ""
+    as_of: str = ""
+    quote_kind: str = ""
+    currency: str = ""
+    volume_unit: str = ""
+    adjustment: str = ""
 
 
 @dataclass
@@ -773,6 +779,13 @@ class KlineCollector:
 
     def _fetch_all_sources(self, symbol: str, days: int) -> list[KlineData]:
         """tencent → stooq(US) / eastmoney(CN/HK) 链路取数(不含缓存/合并逻辑)。"""
+        if self.market == MarketCode.TW:
+            from src.core.providers import ProviderRequest, get_kline_orchestrator
+
+            response = get_kline_orchestrator().fetch_sync(
+                ProviderRequest(symbols=(symbol,), market="TW", extra=(("days", days),))
+            )
+            return response.data if response.success and response.data else []
         klines = _fetch_tencent_klines(symbol, self.market, days)
 
         # Tencent 对部分美股返回的 day 数据异常偏少（仅 1-2 条），使用 Stooq 回退。

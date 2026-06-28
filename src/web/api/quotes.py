@@ -42,6 +42,7 @@ def _quote_to_response(symbol: str, market: MarketCode, quote: dict | None) -> d
             "pe_ratio": None,
             "total_market_value": None,
             "circulating_market_value": None,
+            "provenance": None, "as_of": None, "quote_kind": None,
         }
 
     return {
@@ -61,6 +62,9 @@ def _quote_to_response(symbol: str, market: MarketCode, quote: dict | None) -> d
         "pe_ratio": quote.get("pe_ratio"),
         "total_market_value": quote.get("total_market_value"),
         "circulating_market_value": quote.get("circulating_market_value"),
+        "provenance": quote.get("provenance"),
+        "as_of": quote.get("as_of"),
+        "quote_kind": quote.get("quote_kind"),
     }
 
 

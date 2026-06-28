@@ -579,9 +579,13 @@ class DataCollectorManager:
         from src.core.providers.kline.tencent import TencentKlineProvider
         from src.core.providers.kline.tushare import TushareKlineProvider
         from src.core.providers.kline.yfinance import YFinanceKlineProvider
+        from src.core.providers.kline.finmind import FinMindKlineProvider
 
         cfg = source.config or {}
-        if source.provider == "tencent":
+        if source.provider == "finmind":
+            provider = FinMindKlineProvider(config=cfg)
+            market = "TW"
+        elif source.provider == "tencent":
             provider = TencentKlineProvider(config=cfg)
             market = "CN"
         elif source.provider == "tushare":
@@ -648,9 +652,13 @@ class DataCollectorManager:
         from src.core.providers.base import ProviderRequest
         from src.core.providers.quote.tencent import TencentQuoteProvider
         from src.core.providers.quote.yfinance import YFinanceQuoteProvider
+        from src.core.providers.quote.finmind import FinMindQuoteProvider
 
         cfg = source.config or {}
-        if source.provider == "tencent":
+        if source.provider == "finmind":
+            provider = FinMindQuoteProvider(config=cfg)
+            market = "TW"
+        elif source.provider == "tencent":
             provider = TencentQuoteProvider(config=cfg)
             market = "CN"
         elif source.provider == "yfinance":

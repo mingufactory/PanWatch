@@ -45,6 +45,9 @@ def _serialize_klines(klines) -> list[dict]:
             "high": k.high,
             "low": k.low,
             "volume": k.volume,
+            "provenance": getattr(k, "provenance", ""),
+            "as_of": getattr(k, "as_of", ""),
+            "quote_kind": getattr(k, "quote_kind", ""),
         }
         for k in klines
     ]

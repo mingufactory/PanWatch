@@ -389,6 +389,20 @@ def seed_data_sources():
         },
         # K线数据源
         {
+            "name": "FinMind 台股日線",
+            "type": "kline",
+            "provider": "finmind",
+            "config": {
+                "token": "",
+                "market": "TW",
+                "description": "FinMind TaiwanStockPrice 日線資料",
+            },
+            "enabled": True,
+            "priority": 0,
+            "supports_batch": False,
+            "test_symbols": ["2330", "0050"],
+        },
+        {
             "name": "腾讯K线",
             "type": "kline",
             "provider": "tencent",
@@ -435,6 +449,20 @@ def seed_data_sources():
             "test_symbols": ["601127", "600519"],
         },
         # 实时行情数据源
+        {
+            "name": "FinMind 台股收盤報價",
+            "type": "quote",
+            "provider": "finmind",
+            "config": {
+                "token": "",
+                "market": "TW",
+                "description": "FinMind TaiwanStockPrice EOD，非即時報價",
+            },
+            "enabled": True,
+            "priority": 0,
+            "supports_batch": True,
+            "test_symbols": ["2330", "0050"],
+        },
         {
             "name": "腾讯行情",
             "type": "quote",
