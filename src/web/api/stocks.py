@@ -21,6 +21,7 @@ from src.web.stock_list import search_stocks, refresh_stock_list
 from src.collectors.akshare_collector import _tencent_symbol, _fetch_tencent_quotes
 from src.models.market import MarketCode, MARKETS
 from src.core.agent_catalog import AGENT_KIND_WORKFLOW, infer_agent_kind
+from src.core.market_symbol import normalize_symbol, validate_symbol
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -200,6 +201,9 @@ def get_quotes(db: Session = Depends(get_db)):
             market_code = MarketCode(market)
         except ValueError:
             continue
+        if market_code == MarketCode.TW:
+            # Taiwan quotes are added through the provider layer in Phase 2.
+            continue
 
         symbols = [_tencent_symbol(s.symbol, market_code) for s in stock_list]
         try:
@@ -219,6 +223,14 @@ def get_quotes(db: Session = Depends(get_db)):
 
 @router.post("", response_model=StockResponse)
 def create_stock(stock: StockCreate, db: Session = Depends(get_db)):
+    try:
+        market = MarketCode(stock.market.strip().upper())
+    except ValueError as exc:
+        raise HTTPException(400, f"不支持的市场: {stock.market}") from exc
+    symbol = normalize_symbol(stock.symbol, market)
+    if not validate_symbol(symbol, market):
+        raise HTTPException(400, f"无效的股票代码: {stock.symbol}")
+    stock = stock.model_copy(update={"market": market.value, "symbol": symbol})
     existing = db.query(Stock).filter(
         Stock.symbol == stock.symbol, Stock.market == stock.market
     ).first()

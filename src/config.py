@@ -41,10 +41,10 @@ class Settings(BaseSettings):
     daily_report_cron: str = "30 15 * * 1-5"
 
     # 默认时区（用于调度、时间展示等）。
-    # 统一使用一个环境变量控制：TZ（默认 Asia/Shanghai）。
+    # 統一使用一個環境變數控制：TZ（預設 Asia/Taipei）。
     # 建议使用 IANA 时区名，如 Asia/Shanghai, America/New_York。
     app_timezone: str = Field(
-        default="Asia/Shanghai",
+        default="Asia/Taipei",
         validation_alias=AliasChoices("TZ", "APP_TIMEZONE"),
     )
 

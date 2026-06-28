@@ -7,12 +7,25 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from src.core.timezone import (
+    _get_app_tz,
     format_beijing,
     to_beijing,
     to_iso_utc,
     to_iso_with_tz,
     to_utc,
 )
+
+
+def test_default_timezone_is_taipei(monkeypatch):
+    monkeypatch.delenv("TZ", raising=False)
+    monkeypatch.delenv("APP_TIMEZONE", raising=False)
+    assert _get_app_tz().key == "Asia/Taipei"
+
+
+def test_app_timezone_legacy_override(monkeypatch):
+    monkeypatch.delenv("TZ", raising=False)
+    monkeypatch.setenv("APP_TIMEZONE", "Asia/Shanghai")
+    assert _get_app_tz().key == "Asia/Shanghai"
 
 
 class TestToUtc:

@@ -31,7 +31,7 @@ router = APIRouter()
 
 class InsightItem(BaseModel):
     symbol: str = Field(..., description="股票代码")
-    market: str = Field(..., description="市场: CN/HK/US")
+    market: str = Field(..., description="市场: TW/CN/HK/US")
 
 
 class InsightsBatchRequest(BaseModel):
@@ -59,6 +59,9 @@ def insights_batch(payload: InsightsBatchRequest):
 
     quotes_by_market: dict[MarketCode, dict[str, dict]] = {}
     for market_code, symbols in market_items.items():
+        if market_code == MarketCode.TW:
+            quotes_by_market[market_code] = {}
+            continue
         tencent_symbols = [_tencent_symbol(s, market_code) for s in symbols]
         try:
             items = _fetch_tencent_quotes(tencent_symbols)
@@ -146,7 +149,9 @@ def _parse_verdict(text: str) -> str:
 async def _fetch_fundamental_context(symbol: str, market: str) -> str:
     """基本面摘要:PE / 换手率 / 市值 / 今日振幅(取自实时行情,失败返回空)。"""
     try:
-        mc = MarketCode(market) if market in ("CN", "HK", "US") else MarketCode.CN
+        mc = MarketCode(market.strip().upper())
+        if mc == MarketCode.TW:
+            return ""
         rows = await asyncio.to_thread(
             _fetch_tencent_quotes, [_tencent_symbol(symbol, mc)]
         )

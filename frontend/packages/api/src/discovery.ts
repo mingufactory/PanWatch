@@ -14,6 +14,7 @@ function withQuery(path: string, params: Record<string, QueryValue>): string {
   return s ? `${path}?${s}` : path
 }
 
+
 export interface HotStockItem {
   symbol: string
   market: string
@@ -33,7 +34,7 @@ export interface HotBoardItem {
 
 export const discoveryApi = {
   listHotStocks: (params?: {
-    market?: 'CN' | 'HK' | 'US'
+    market?: 'TW' | 'CN' | 'HK' | 'US'
     mode?: 'turnover' | 'gainers' | 'for_you'
     limit?: number
   }) =>
@@ -46,7 +47,7 @@ export const discoveryApi = {
     ),
 
   listHotBoards: (params?: {
-    market?: 'CN' | 'HK' | 'US'
+    market?: 'TW' | 'CN' | 'HK' | 'US'
     mode?: 'gainers' | 'turnover' | 'hot'
     limit?: number
   }) =>
@@ -72,4 +73,3 @@ export const discoveryApi = {
       })
     ),
 }
-

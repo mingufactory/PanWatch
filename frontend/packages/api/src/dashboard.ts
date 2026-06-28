@@ -170,7 +170,7 @@ export interface DashboardRiskSignalItem extends StrategySignalItem {
 
 export interface DashboardOverviewResponse {
   generated_at: string
-  market: 'ALL' | 'CN' | 'HK' | 'US'
+  market: 'ALL' | 'TW' | 'CN' | 'HK' | 'US'
   snapshot_date: string
   data_freshness: {
     strategy_snapshot_date: string
@@ -253,7 +253,7 @@ export const dashboardApi = {
     ),
 
   overview: (params?: {
-    market?: 'ALL' | 'CN' | 'HK' | 'US'
+    market?: 'ALL' | 'TW' | 'CN' | 'HK' | 'US'
     action_limit?: number
     risk_limit?: number
     days?: number

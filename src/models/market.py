@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 
 class MarketCode(str, Enum):
+    TW = "TW"  # 台股
     CN = "CN"  # A股
     HK = "HK"  # 港股
     US = "US"  # 美股
@@ -49,6 +50,14 @@ class MarketDef:
 
 # 预定义市场
 MARKETS: dict[MarketCode, MarketDef] = {
+    MarketCode.TW: MarketDef(
+        code=MarketCode.TW,
+        name="台股",
+        timezone="Asia/Taipei",
+        sessions=[TradingSession(time(9, 0), time(13, 30))],
+        # Conservative syntax fallback; the security master remains authoritative.
+        symbol_pattern=r"^[0-9A-Z]{4,6}$",
+    ),
     MarketCode.CN: MarketDef(
         code=MarketCode.CN,
         name="A股",

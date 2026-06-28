@@ -31,7 +31,7 @@ def get_platform() -> str:
         db.close()
 
 
-def stock_url(symbol: str, market: str, platform: str = "") -> str:
+def stock_url(symbol: str, market: str, platform: str = "") -> str | None:
     """生成股票行情页 URL。
 
     Args:
@@ -44,6 +44,9 @@ def stock_url(symbol: str, market: str, platform: str = "") -> str:
 
     m = market.upper()
 
+    if m not in {"CN", "HK", "US", "TW"}:
+        return None
+
     if platform == "xueqiu":
         return _xueqiu_url(symbol, m)
 
@@ -55,6 +58,8 @@ def stock_link_markdown(symbol: str, market: str, platform: str = "") -> str:
     """生成 Markdown 格式的股票链接: [002837.CN](https://xueqiu.com/S/SZ002837)"""
     code = f"{symbol}.{market}"
     url = stock_url(symbol, market, platform)
+    if not url:
+        return code
     return f"[{code}]({url})"
 
 
@@ -62,11 +67,15 @@ def stock_link_markdown(symbol: str, market: str, platform: str = "") -> str:
 # 各平台 URL 生成
 # ---------------------------------------------------------------------------
 
-def _xueqiu_url(symbol: str, market: str) -> str:
+def _xueqiu_url(symbol: str, market: str) -> str | None:
+    if market == "TW":
+        return None
     if market == "US":
         return f"https://xueqiu.com/S/{symbol}"
     if market == "HK":
         return f"https://xueqiu.com/S/{symbol}"
+    if market != "CN":
+        return None
     # CN A股
     from src.core.cn_symbol import get_cn_prefix
     prefix = get_cn_prefix(symbol, upper=True)

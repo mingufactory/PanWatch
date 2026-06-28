@@ -11,7 +11,7 @@ router = APIRouter()
 
 class KlineItem(BaseModel):
     symbol: str = Field(..., description="股票代码")
-    market: str = Field(..., description="市场: CN/HK/US")
+    market: str = Field(..., description="市场: TW/CN/HK/US")
     days: int | None = Field(default=60, description="K线天数")
     interval: str | None = Field(default="1d", description="周期: 1d/1w/1m")
 
@@ -22,7 +22,7 @@ class KlineBatchRequest(BaseModel):
 
 class KlineSummaryItem(BaseModel):
     symbol: str = Field(..., description="股票代码")
-    market: str = Field(..., description="市场: CN/HK/US")
+    market: str = Field(..., description="市场: TW/CN/HK/US")
 
 
 class KlineSummaryBatchRequest(BaseModel):

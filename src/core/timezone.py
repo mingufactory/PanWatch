@@ -3,7 +3,7 @@
 默认时区可通过环境变量覆盖：
 - TZ（推荐）
 
-未设置时默认 Asia/Shanghai。
+未設定時預設 Asia/Taipei。
 """
 
 from datetime import datetime, timezone
@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 
 def _get_app_tz() -> ZoneInfo:
-    tz_name = os.environ.get("TZ") or os.environ.get("APP_TIMEZONE") or "Asia/Shanghai"
+    tz_name = os.environ.get("TZ") or os.environ.get("APP_TIMEZONE") or "Asia/Taipei"
     try:
         return ZoneInfo(tz_name)
     except Exception:

@@ -9,7 +9,7 @@ router = APIRouter()
 
 class QuoteItem(BaseModel):
     symbol: str = Field(..., description="股票代码")
-    market: str = Field(..., description="市场: CN/HK/US")
+    market: str = Field(..., description="市场: TW/CN/HK/US")
 
 
 class QuoteBatchRequest(BaseModel):

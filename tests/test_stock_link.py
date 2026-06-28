@@ -39,6 +39,12 @@ class TestStockUrl:
         url = stock_url("002837", "cn", platform="xueqiu")
         assert url == "https://xueqiu.com/S/SZ002837"
 
+    def test_tw_is_not_coerced_to_cn(self):
+        assert stock_url("2330", "TW", platform="xueqiu") is None
+
+    def test_unknown_market_is_not_coerced_to_cn(self):
+        assert stock_url("2330", "XX", platform="xueqiu") is None
+
 
 class TestStockLinkMarkdown:
     def test_cn(self):
@@ -50,3 +56,6 @@ class TestStockLinkMarkdown:
         """Markdown 链接 — US 格式"""
         md = stock_link_markdown("AAPL", "US", platform="xueqiu")
         assert md == "[AAPL.US](https://xueqiu.com/S/AAPL)"
+
+    def test_unsupported_tw_link_is_plain_text(self):
+        assert stock_link_markdown("2330", "TW", platform="xueqiu") == "2330.TW"

@@ -1328,7 +1328,7 @@ export default function StocksPage() {
     return value.toFixed(2)
   }
 
-  const marketLabel = (m: string) => m === 'CN' ? 'A股' : m === 'HK' ? '港股' : m === 'US' ? '美股' : m
+  const marketLabel = (m: string) => m === 'TW' ? '台股' : m === 'CN' ? 'A股' : m === 'HK' ? '港股' : m === 'US' ? '美股' : m
 
   // 市场徽章样式和短标签
   const marketBadge = (m: string) => {

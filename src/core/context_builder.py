@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 # 各市场用于相对强度对比的大盘指数(代码 + 中文标签)。
 # A股优先沪深300(000300);港股恒生指数;美股标普500(efinance 用 .INX)。
 _INDEX_BY_MARKET: dict[str, tuple[str, str]] = {
+    "TW": ("TAIEX", "臺灣加權指數"),
     "CN": ("000300", "沪深300"),
     "HK": ("HSI", "恒生指数"),
     "US": (".INX", "标普500"),
@@ -219,9 +220,12 @@ class ContextBuilder:
 
     @staticmethod
     def _index_for_market(market) -> tuple[str, str]:
-        """市场 -> (指数代码, 中文标签)。未知市场回退到沪深300。"""
+        """市場 -> (指數代碼, 中文標籤)。"""
         mkt = market.value if isinstance(market, MarketCode) else str(market or "")
-        return _INDEX_BY_MARKET.get(mkt, _INDEX_BY_MARKET["CN"])
+        try:
+            return _INDEX_BY_MARKET[mkt]
+        except KeyError as exc:
+            raise ValueError(f"unsupported market: {mkt}") from exc
 
     def _fetch_index_context(self, symbol: str, market) -> dict:
         """取指数多周期收益。指数 secid 规则与个股不同,用 get_index_klines 显式映射直取;

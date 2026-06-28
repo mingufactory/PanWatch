@@ -12,12 +12,13 @@ const FACTOR_LABELS: Record<string, string> = {
 }
 
 const MARKET_LABELS: Record<string, string> = {
+  TW: '台股',
   CN: 'A股',
   HK: '港股',
   US: '美股',
 }
 
-const MARKET_ORDER: Record<string, number> = { CN: 0, HK: 1, US: 2 }
+const MARKET_ORDER: Record<string, number> = { TW: 0, CN: 1, HK: 2, US: 3 }
 const FACTOR_ORDER = ['alpha_score', 'catalyst_score', 'quality_score', 'risk_penalty', 'crowd_penalty']
 
 const factorLabel = (code: string) => FACTOR_LABELS[code] || code

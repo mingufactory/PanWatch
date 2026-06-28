@@ -30,9 +30,11 @@ type GroupedSignal = {
 }
 
 const marketLabel = (m?: string) => {
+  if (m === 'TW') return '台股'
   if (m === 'HK') return '港股'
   if (m === 'US') return '美股'
-  return 'A股'
+  if (m === 'CN') return 'A股'
+  return m || ''
 }
 
 const sourceAgentLabelMap: Record<string, string> = {
