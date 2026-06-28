@@ -382,6 +382,20 @@ def seed_data_sources():
     sources = [
         # 新闻类数据源
         {
+            "name": "台灣新聞（待設定）",
+            "type": "news",
+            "provider": "taiwan_configured",
+            "config": {
+                "items": [],
+                "market": "TW",
+                "description": "安全佔位：核准台灣新聞來源前不做外部抓取，可手動放入測試/人工整理 items。",
+            },
+            "enabled": True,
+            "priority": 0,
+            "supports_batch": True,
+            "test_symbols": ["2330", "0050"],
+        },
+        {
             "name": "雪球资讯",
             "type": "news",
             "provider": "xueqiu",

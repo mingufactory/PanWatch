@@ -14,8 +14,9 @@ router = APIRouter()
 # 来源显示名称
 SOURCE_LABELS = {
     "xueqiu": "雪球",
-    "eastmoney_news": "东财资讯",
-    "eastmoney": "东财公告",
+    "eastmoney_news": "東方財富資訊",
+    "eastmoney": "東方財富公告",
+    "taiwan_configured": "台灣新聞（待設定）",
 }
 
 
@@ -53,6 +54,7 @@ async def get_news(
     # 获取所有自选股（用于匹配）
     all_stocks = db.query(Stock).all()
     stock_map = {s.symbol: s.name for s in all_stocks}
+    stock_market_map = {s.symbol: (s.market or "CN").upper() for s in all_stocks}
     name_to_symbol = {s.name: s.symbol for s in all_stocks}
 
     # 解析股票 - 优先使用 names 参数
@@ -87,6 +89,7 @@ async def get_news(
         symbols=symbol_list,
         since_hours=hours,
         symbol_names=passed_symbol_names,  # 直接传递已有的股票名称映射
+        symbol_markets={str(sym): str(stock_market_map.get(sym, "CN")) for sym in symbol_list},
     )
 
     def is_related(item: NewsItem) -> bool:

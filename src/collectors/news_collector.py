@@ -51,6 +51,7 @@ class BaseNewsCollector(ABC):
     """新闻采集器抽象基类"""
 
     source: str = ""
+    supports_markets: set[str] = set()
 
     @abstractmethod
     async def fetch_news(self, symbols: list[str] | None = None, since: datetime | None = None) -> list[NewsItem]:
@@ -76,6 +77,7 @@ class XueqiuNewsCollector(BaseNewsCollector):
     """
 
     source = "xueqiu"
+    supports_markets = {"CN"}
     API_URL = "https://xueqiu.com/statuses/stock_timeline.json"
 
     def __init__(self, cookies: str = ""):
@@ -213,6 +215,7 @@ class EastMoneyStockNewsCollector(BaseNewsCollector):
     """
 
     source = "eastmoney_news"
+    supports_markets = {"CN", "HK", "US"}
     API_URL = "https://search-api-web.eastmoney.com/search/jsonp"
 
     def __init__(self, symbol_names: dict[str, str] | None = None):
@@ -449,6 +452,7 @@ class EastMoneyNewsCollector(BaseNewsCollector):
     """
 
     source = "eastmoney"
+    supports_markets = {"CN"}
     API_URL = "https://np-anotice-stock.eastmoney.com/api/security/ann"
 
     async def fetch_news(self, symbols: list[str] | None = None, since: datetime | None = None) -> list[NewsItem]:
@@ -567,6 +571,51 @@ class EastMoneyNewsCollector(BaseNewsCollector):
         )
 
 
+class TaiwanConfiguredNewsCollector(BaseNewsCollector):
+    """安全的台股新聞佔位來源。
+
+    未經核准的台灣新聞網站不在程式內硬編碼抓取。部署者可在資料源
+    config.items 放入人工整理或測試用項目；未設定時回傳空清單，避免台股
+    請求落回東方財富／雪球等中國資料源。
+    """
+
+    source = "taiwan_configured"
+    supports_markets = {"TW"}
+
+    def __init__(self, items: list[dict] | None = None):
+        self.items = items or []
+        self.last_error = "no approved Taiwan news source configured"
+
+    async def fetch_news(self, symbols: list[str] | None = None, since: datetime | None = None) -> list[NewsItem]:
+        symbol_set = set(symbols or [])
+        out: list[NewsItem] = []
+        for idx, item in enumerate(self.items):
+            item_symbols = [str(s) for s in item.get("symbols", [])]
+            if symbol_set and not (symbol_set & set(item_symbols)):
+                continue
+            try:
+                publish_time = item.get("publish_time") or datetime.now().isoformat()
+                if isinstance(publish_time, str):
+                    publish_time = datetime.fromisoformat(publish_time)
+                if since and publish_time < since:
+                    continue
+                out.append(
+                    NewsItem(
+                        source=self.source,
+                        external_id=str(item.get("external_id") or f"tw-config-{idx}"),
+                        title=str(item.get("title") or ""),
+                        content=str(item.get("content") or ""),
+                        publish_time=publish_time,
+                        symbols=item_symbols,
+                        importance=int(item.get("importance") or 0),
+                        url=str(item.get("url") or ""),
+                    )
+                )
+            except Exception:
+                continue
+        return out
+
+
 class NewsCollector:
     """聚合新闻采集器"""
 
@@ -577,6 +626,9 @@ class NewsCollector:
             symbol_names=config.get("symbol_names")  # 可选，不传则自动从数据库获取
         ),
         "eastmoney": lambda config: EastMoneyNewsCollector(),
+        "taiwan_configured": lambda config: TaiwanConfiguredNewsCollector(
+            items=config.get("items") or []
+        ),
     }
 
     def __init__(self, collectors: list[BaseNewsCollector] | None = None):
@@ -623,6 +675,7 @@ class NewsCollector:
         symbols: list[str] | None = None,
         since_hours: int = 2,
         symbol_names: dict[str, str] | None = None,
+        symbol_markets: dict[str, str] | None = None,
     ) -> list[NewsItem]:
         """
         聚合所有数据源的新闻（并发采集）
@@ -646,11 +699,19 @@ class NewsCollector:
         # 公告使用更长的时间窗口（因为公告发布较少）
         news_since = datetime.now() - timedelta(hours=since_hours)
         announcement_since = datetime.now() - timedelta(hours=max(since_hours, 72))
+        markets = {sym: (symbol_markets or {}).get(sym, "CN").upper() for sym in (symbols or [])}
 
         async def fetch_from_collector(collector: BaseNewsCollector) -> list[NewsItem]:
             try:
+                collector_symbols = symbols
+                if collector.supports_markets and symbols:
+                    collector_symbols = [
+                        sym for sym in symbols if markets.get(sym, "CN") in collector.supports_markets
+                    ]
+                    if not collector_symbols:
+                        return []
                 since = announcement_since if collector.source == "eastmoney" else news_since
-                return await collector.fetch_news(symbols, since)
+                return await collector.fetch_news(collector_symbols, since)
             except Exception as e:
                 logger.error(f"采集器 {collector.source} 失败: {e}{source_suffix()}")
                 return []
