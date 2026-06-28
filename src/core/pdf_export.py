@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 _REPORT_CSS = """
 @page {
   size: A4; margin: 1.7cm 1.5cm;
-  @bottom-center { content: "仅供参考,不构成投资建议 · 第 " counter(page) " / " counter(pages) " 页";
+  @bottom-center { content: "僅供參考，不構成投資建議 · 第 " counter(page) " / " counter(pages) " 頁";
                    font-size: 8pt; color: #9ca3af; }
 }
 body { font-family: "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
@@ -95,7 +95,7 @@ def _render_xhtml2pdf(title: str, body_html: str) -> bytes:
         + f'<div class="doc-title">{escape((title or "深度分析").strip())}</div>'
         + body_html
         + '<div style="margin-top:14pt;font-size:8.5pt;color:#9ca3af;">'
-        + "本报告由 AI 生成,仅供参考,不构成投资建议。</div></body></html>"
+        + "本報告由 AI 產生，僅供參考，不構成投資建議。</div></body></html>"
     )
     buf = io.BytesIO()
     pisa.CreatePDF(src=doc, dest=buf, encoding="utf-8")
@@ -103,10 +103,10 @@ def _render_xhtml2pdf(title: str, body_html: str) -> bytes:
 
 
 _ANALYST_SECTIONS = [
-    ("market", "技术分析师"),
-    ("social", "情绪分析师"),
-    ("news", "新闻分析师"),
-    ("fundamentals", "基本面分析师"),
+    ("market", "技術分析師"),
+    ("social", "情緒分析師"),
+    ("news", "新聞分析師"),
+    ("fundamentals", "基本面分析師"),
 ]
 
 
@@ -128,18 +128,18 @@ def assemble_report_markdown(raw_data: dict) -> str:
     conf = sug.get("confidence")
     if conf is not None:
         try:
-            head += f" · 置信度 {float(conf):.1f}/10"
+            head += f" · 信心程度 {float(conf):.1f}/10"
         except (TypeError, ValueError):
             pass
-    parts.append(f"## 最终决策\n\n{head}\n")
+    parts.append(f"## 最終決策\n\n{head}\n")
 
     final_decision = (rd.get("final_decision") or "").strip()
     trader = (rd.get("trader_plan") or "").strip()
     if final_decision or trader:
         body = final_decision
         if trader:
-            body = (body + "\n\n" if body else "") + f"### 💼 交易员执行计划\n\n{trader}"
-        parts.append(f"## PM 最终决策书\n\n{body}\n")
+            body = (body + "\n\n" if body else "") + f"### 💼 交易員執行計畫\n\n{trader}"
+        parts.append(f"## PM 最終決策書\n\n{body}\n")
 
     for key, title in _ANALYST_SECTIONS:
         txt = (reports.get(key) or "").strip()
@@ -151,16 +151,16 @@ def assemble_report_markdown(raw_data: dict) -> str:
         seg = dh
         jd = (debate.get("judge_decision") or "").strip()
         if jd:
-            seg += f"\n\n### ⚖️ 研究主管裁决\n\n{jd}"
-        parts.append(f"## 看多看空辩论\n\n{seg}\n")
+            seg += f"\n\n### ⚖️ 研究主管裁決\n\n{jd}"
+        parts.append(f"## 多空辯論\n\n{seg}\n")
 
     rh = (risk.get("history") or "").strip()
     rjd = (rd.get("risk_judgment") or risk.get("judge_decision") or "").strip()
     if rh or rjd:
         seg = rh
         if rjd:
-            seg += (("\n\n" if seg else "") + f"### 🛡️ 风控裁决\n\n{rjd}")
-        parts.append(f"## 风控辩论\n\n{seg}\n")
+            seg += (("\n\n" if seg else "") + f"### 🛡️ 風險控管裁決\n\n{rjd}")
+        parts.append(f"## 風險控管辯論\n\n{seg}\n")
 
     return "\n".join(parts).strip()
 

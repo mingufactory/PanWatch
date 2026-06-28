@@ -186,7 +186,7 @@ export default function AgentsPage() {
     try {
       const d = new Date(iso)
       if (isNaN(d.getTime())) return iso
-      return d.toLocaleString('zh-CN', {
+      return d.toLocaleString('zh-TW', {
         timeZone: tz || undefined,
         month: '2-digit',
         day: '2-digit',

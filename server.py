@@ -273,25 +273,52 @@ def setup_playwright():
         logger.error(f"Playwright 安装失败: {e}")
 
 
+FRESH_INSTALL_SAMPLE_STOCKS = (
+    {"symbol": "2330", "name": "台積電", "market": "TW"},
+    {"symbol": "0050", "name": "元大台灣50", "market": "TW"},
+    {"symbol": "2317", "name": "鴻海", "market": "TW"},
+    {"symbol": "2454", "name": "聯發科", "market": "TW"},
+    {"symbol": "2881", "name": "富邦金", "market": "TW"},
+)
+FRESH_INSTALL_SAMPLE_SEED_KEY = "seed.fresh_install_stocks.zh_tw.v1"
+
+
 def seed_sample_stocks():
-    """首次启动时添加示例股票"""
+    """僅在全新安裝（自選清單為空）時加入台股範例。"""
     db = SessionLocal()
     try:
-        # 只在没有任何股票时才添加示例
-        if db.query(Stock).count() > 0:
+        # 版本標記避免使用者刪除所有範例後，下次啟動又被加回。
+        seeded = (
+            db.query(AppSettings)
+            .filter(AppSettings.key == FRESH_INSTALL_SAMPLE_SEED_KEY)
+            .first()
+        )
+        if seeded:
             return
 
-        samples = [
-            {"symbol": "600519", "name": "贵州茅台", "market": "CN"},
-            {"symbol": "002594", "name": "比亚迪", "market": "CN"},
-            {"symbol": "300750", "name": "宁德时代", "market": "CN"},
-            {"symbol": "00700", "name": "腾讯控股", "market": "HK"},
-            {"symbol": "AAPL", "name": "苹果", "market": "US"},
-        ]
-        for s in samples:
+        # 已有任何股票代表不是全新自選清單；只記錄狀態，不變更資料。
+        if db.query(Stock).count() > 0:
+            db.add(
+                AppSettings(
+                    key=FRESH_INSTALL_SAMPLE_SEED_KEY,
+                    value="skipped-existing",
+                    description="台股全新安裝範例種子版本",
+                )
+            )
+            db.commit()
+            return
+
+        for s in FRESH_INSTALL_SAMPLE_STOCKS:
             db.add(Stock(**s))
+        db.add(
+            AppSettings(
+                key=FRESH_INSTALL_SAMPLE_SEED_KEY,
+                value="seeded",
+                description="台股全新安裝範例種子版本",
+            )
+        )
         db.commit()
-        logger.info("已添加 5 只示例股票（首次启动）")
+        logger.info("已加入 5 檔台股範例（僅限全新安裝）")
     finally:
         db.close()
 

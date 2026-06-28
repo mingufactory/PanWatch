@@ -14,6 +14,7 @@ import { useLocalStorage } from '@/lib/utils'
 import StockInsightModal from '@panwatch/biz-ui/components/stock-insight-modal'
 import FactorWeightsPanel from '@/components/FactorWeightsPanel'
 import SignalScoreShareCard from '@/components/SignalScoreShareCard'
+import { marketLabel } from '@/i18n/zh-TW'
 
 type SourceFilter = 'all' | 'market_scan' | 'watchlist' | 'mixed'
 type HoldingFilter = 'all' | 'held' | 'unheld'
@@ -29,20 +30,12 @@ type GroupedSignal = {
   topScore: number
 }
 
-const marketLabel = (m?: string) => {
-  if (m === 'TW') return '台股'
-  if (m === 'HK') return '港股'
-  if (m === 'US') return '美股'
-  if (m === 'CN') return 'A股'
-  return m || ''
-}
-
 const sourceAgentLabelMap: Record<string, string> = {
-  premarket_outlook: '盘前分析',
-  intraday_monitor: '盘中监测',
-  daily_report: '收盘复盘',
-  news_digest: '新闻速递',
-  market_scan: '市场扫描',
+  premarket_outlook: '盤前分析',
+  intraday_monitor: '盤中監測',
+  daily_report: '收盤複盤',
+  news_digest: '新聞快訊',
+  market_scan: '市場掃描',
 }
 
 const sourceAgentLabel = (agent?: string) => {
@@ -78,7 +71,7 @@ const formatMetric = (value: unknown, digits = 1) => {
 }
 
 const DEFAULT_FILTERS = {
-  market: 'ALL' as const,
+  market: 'TW' as const,
   source: 'all' as const,
   holding: 'unheld' as const,
   strategy: 'all',
@@ -232,7 +225,7 @@ export default function OpportunitiesPage() {
   const [strategyCatalog, setStrategyCatalog] = useState<StrategyCatalogItem[]>([])
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set())
 
-  const [market, setMarket] = useLocalStorage<'ALL' | 'CN' | 'HK' | 'US'>('panwatch_opportunities_market_v3', DEFAULT_FILTERS.market)
+  const [market, setMarket] = useLocalStorage<'ALL' | 'TW' | 'CN' | 'HK' | 'US'>('panwatch_opportunities_market_v4', DEFAULT_FILTERS.market)
   const [source, setSource] = useLocalStorage<SourceFilter>('panwatch_opportunities_source_v3', DEFAULT_FILTERS.source)
   const [holding, setHolding] = useLocalStorage<HoldingFilter>('panwatch_opportunities_holding_v3', DEFAULT_FILTERS.holding)
   const [strategy, setStrategy] = useLocalStorage('panwatch_opportunities_strategy_v3', DEFAULT_FILTERS.strategy)
@@ -628,11 +621,12 @@ export default function OpportunitiesPage() {
 
       <div className="card p-3 md:p-4 mb-4">
         <div className="grid grid-cols-2 md:grid-cols-8 gap-2">
-          <Select value={market} onValueChange={(v) => setMarket(v as 'ALL' | 'CN' | 'HK' | 'US')}>
+          <Select value={market} onValueChange={(v) => setMarket(v as 'ALL' | 'TW' | 'CN' | 'HK' | 'US')}>
             <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">全部市场</SelectItem>
-              <SelectItem value="CN">A股</SelectItem>
+              <SelectItem value="TW">台股</SelectItem>
+              <SelectItem value="CN">中國 A 股</SelectItem>
               <SelectItem value="HK">港股</SelectItem>
               <SelectItem value="US">美股</SelectItem>
             </SelectContent>

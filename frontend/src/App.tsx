@@ -23,15 +23,15 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@panwatch/base-ui/components/ui/button'
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: '首页' },
+  { to: '/', icon: LayoutDashboard, label: '首頁' },
   { to: '/portfolio', icon: List, label: '持仓' },
-  { to: '/opportunities', icon: Sparkles, label: '机会' },
-  { to: '/paper-trading', icon: Activity, label: '模拟盘' },
+  { to: '/opportunities', icon: Sparkles, label: '機會' },
+  { to: '/paper-trading', icon: Activity, label: '模擬交易' },
   { to: '/alerts', icon: BellRing, label: '提醒' },
   { to: '/agents', icon: Bot, label: 'Agent' },
-  { to: '/history', icon: Clock, label: '历史' },
-  { to: '/datasources', icon: Database, label: '数据源' },
-  { to: '/settings', icon: Settings, label: '设置' },
+  { to: '/history', icon: Clock, label: '歷史' },
+  { to: '/datasources', icon: Database, label: '資料來源' },
+  { to: '/settings', icon: Settings, label: '設定' },
 ]
 const desktopPrimaryNavItems = navItems.slice(0, 5)
 const desktopMoreNavItems = navItems.slice(5)
@@ -273,13 +273,13 @@ function App() {
       <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>发现新版本</DialogTitle>
+            <DialogTitle>發現新版本</DialogTitle>
             <DialogDescription>
-              当前版本 v{version}，可升级到 v{upgradeInfo?.latest}。
+              目前版本 v{version}，可升級至 v{upgradeInfo?.latest}。
             </DialogDescription>
           </DialogHeader>
           <div className="text-[12px] text-muted-foreground">
-            建议升级以获取最新功能和修复。
+            建議升級以取得最新功能與修正。
           </div>
           <div className="flex items-center justify-end gap-2">
             <Button
@@ -297,7 +297,7 @@ function App() {
                 window.open(url, '_blank', 'noopener,noreferrer')
               }}
             >
-              去升级
+              前往升級
             </Button>
           </div>
         </DialogContent>

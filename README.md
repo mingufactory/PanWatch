@@ -1,6 +1,6 @@
-# 盯盘侠 PanWatch
+# PanWatch 台股盯盤助手
 
-**自托管 AI 盯盘助手 · 集成 [TradingAgents](https://github.com/TauricResearch/TradingAgents) 多 Agent 投资决策** — A 股 / 港股 / 美股实时监控、持仓管理、智能分析、全渠道推送
+**自架 AI 盯盤助手 · 整合 [TradingAgents](https://github.com/TauricResearch/TradingAgents) 多 Agent 投資決策** — 以台股為預設，並保留中國 A 股、港股與美股相容性
 
 [![GitHub stars](https://img.shields.io/github/stars/TNT-Likely/PanWatch?style=flat&logo=github&color=yellow)](https://github.com/TNT-Likely/PanWatch/stargazers)
 [![Docker Pulls](https://img.shields.io/docker/pulls/sunxiao0721/panwatch?logo=docker&label=docker%20pulls&color=2496ED)](https://hub.docker.com/r/sunxiao0721/panwatch)
@@ -41,11 +41,11 @@
 - 3-5 分钟输出完整推理链，结论同步推送到 Telegram / 微信 / 钉钉
 - 默认 deepseek-chat，单次 ~$0.05，月度预算可控
 
-## 为什么选择盯盘侠？
+## 為什麼選擇 PanWatch？
 
-- **数据私有** — 自托管部署，持仓数据不经过任何第三方
-- **AI 原生** — 不是简单的指标堆砌，而是让 AI 理解你的持仓、风格和目标
-- **开箱即用** — Docker 一键部署，5 分钟完成配置
+- **資料自主** — 自架部署，持倉資料由你管理
+- **AI 原生** — 讓 AI 綜合持倉、交易風格與目標，而非只堆疊指標
+- **快速部署** — 使用 Docker 約 5 分鐘完成基本設定
 
 ## 核心功能
 
@@ -73,11 +73,11 @@
 </details>
 
 <details>
-<summary><b>多市场 & 多账户</b></summary>
+<summary><b>多市場與多帳戶</b></summary>
 
-- **覆盖市场**：A 股、港股、美股实时行情
-- **账户管理**：支持多券商账户独立管理，汇总展示总资产
-- **交易风格**：按短线/波段/长线分别设置，AI 建议更精准
+- **涵蓋市場**：台股優先，並相容中國 A 股、港股與美股；資料即時性依啟用的 provider 而定
+- **帳戶管理**：支援多個券商帳戶獨立管理及資產彙總
+- **交易風格**：可依短線、波段與長線分別設定
 
 </details>
 
@@ -98,7 +98,7 @@ Telegram / 企业微信 / 钉钉 / 飞书 / Bark / 自定义 Webhook
 
 </details>
 
-## 快速开始
+## 快速開始
 
 ```bash
 docker run -d \
@@ -108,11 +108,11 @@ docker run -d \
   sunxiao0721/panwatch:latest
 ```
 
-访问 `http://localhost:8000`，首次使用设置账号密码即可。
+開啟 `http://localhost:8000`，首次使用時設定帳號密碼。全新安裝會以 `Asia/Taipei` 與台股為預設，並加入台積電（2330）、元大台灣50（0050）、鴻海（2317）、聯發科（2454）及富邦金（2881）作為自選清單範例；既有資料庫不會被覆寫。
 
-说明：镜像内已包含 Playwright 运行所需的系统依赖；Chromium 浏览器会在容器首次启动时自动下载并安装到挂载卷（默认 `/app/data/playwright`），首次启动可能需要几分钟且需要网络可达。
+說明：映像檔已包含 Playwright 所需的系統相依套件；Chromium 會在容器首次啟動時下載至掛載磁碟區（預設 `/app/data/playwright`），可能需要數分鐘及可用的網路連線。
 
-如果不需要截图等浏览器能力，可以在启动容器时设置 `PLAYWRIGHT_SKIP_BROWSER_INSTALL=1` 跳过首次 Chromium 下载/安装。
+若不需要圖表截圖，可在啟動容器時設定 `PLAYWRIGHT_SKIP_BROWSER_INSTALL=1`，略過 Chromium 安裝。
 
 <details>
 <summary>Docker Compose</summary>
@@ -140,15 +140,15 @@ docker-compose up -d
 </details>
 
 <details>
-<summary>环境变量</summary>
+<summary>環境變數</summary>
 
-| 变量名 | 说明 | 默认值 |
+| 變數名稱 | 說明 | 預設值 |
 |--------|------|--------|
 | `AUTH_USERNAME` | 预设登录用户名 | 首次访问时设置 |
 | `AUTH_PASSWORD` | 预设登录密码 | 首次访问时设置 |
 | `JWT_SECRET` | JWT 签名密钥 | 自动生成 |
 | `DATA_DIR` | 数据存储目录 | `./data` |
-| `TZ` | 应用时区（影响 Agent 调度触发时间与时间展示） | `Asia/Shanghai` |
+| `TZ` | 應用程式時區（影響 Agent 排程與時間顯示） | `Asia/Taipei` |
 | `PLAYWRIGHT_SKIP_BROWSER_INSTALL` | 跳过首次 Chromium 安装（不需要截图时可用） | 未设置 |
 | `LOG_LEVEL` | 控制台日志级别。默认 `INFO`（只输出业务事件 + 错误）；排查问题时设 `DEBUG` 可看到调度心跳、采集过程等底层日志。UI 日志板始终保留完整记录，不受影响 | `INFO` |
 | `HTTP_PROXY` / `HTTPS_PROXY` / `http_proxy` | 出站 HTTP 代理。三种配置方式任选其一: ① 启动前 `export HTTP_PROXY=...`；② `.env` 里写 `http_proxy=http://host:port`；③ UI「设置 → 全局 HTTP 代理」。三者优先级:外部环境变量 > UI > `.env`。生效后所有 httpx 客户端走代理。`NO_PROXY` 默认包含 `localhost,127.0.0.1` | 未设置 |
@@ -156,12 +156,12 @@ docker-compose up -d
 </details>
 
 <details>
-<summary>首次配置</summary>
+<summary>首次設定</summary>
 
-1. 访问 Web 界面，设置登录账号
-2. **设置 → AI 服务商**：配置 OpenAI 兼容 API（支持 OpenAI / 智谱 / DeepSeek / Ollama 等）
-3. **设置 → 通知渠道**：添加 Telegram 或其他推送渠道
-4. **持仓 → 添加股票**：添加自选股，启用对应 Agent
+1. 開啟 Web 介面並設定登入帳號。
+2. 前往「設定 → AI 服務商」，設定 OpenAI 相容 API。
+3. 前往「設定 → 通知管道」，加入 Telegram 或其他推播管道。
+4. 前往「持倉 → 新增股票」，調整自選清單並啟用需要的 Agent。
 
 </details>
 

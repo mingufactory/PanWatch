@@ -355,7 +355,7 @@ async def trigger_stock_agent(
     wait: bool = False,
     force_refresh: bool = False,
     symbol: str = Query(""),
-    market: str = Query("CN"),
+    market: str = Query("TW"),
     name: str = Query(""),
     db: Session = Depends(get_db),
 ):

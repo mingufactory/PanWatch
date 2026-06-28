@@ -23,7 +23,7 @@ const EXIT_REASON_MAP: Record<string, string> = {
 }
 
 function formatCurrency(v: number) {
-  return v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return v.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function PnlText({ value, suffix = '' }: { value: number; suffix?: string }) {

@@ -218,7 +218,7 @@ interface PriceAlertRuleSummary {
   enabled: boolean
 }
 
-const emptyStockForm: StockForm = { symbol: '', name: '', market: 'CN' }
+const emptyStockForm: StockForm = { symbol: '', name: '', market: 'TW' }
 const emptyAccountForm: AccountForm = { name: '', available_funds: '0' }
 
 const round2 = (value: number) => Math.round(value * 100) / 100
@@ -378,13 +378,13 @@ export default function StocksPage() {
   // Kline Dialog
   const [klineDialogOpen, setKlineDialogOpen] = useState(false)
   const [klineDialogSymbol, setKlineDialogSymbol] = useState('')
-  const [klineDialogMarket, setKlineDialogMarket] = useState('CN')
+  const [klineDialogMarket, setKlineDialogMarket] = useState('TW')
   const [klineDialogName, setKlineDialogName] = useState<string | undefined>(undefined)
   const [klineDialogHasPosition, setKlineDialogHasPosition] = useState<boolean>(false)
   const [klineDialogInitialSummary, setKlineDialogInitialSummary] = useState<KlineSummary | null>(null)
   const [insightOpen, setInsightOpen] = useState(false)
   const [insightSymbol, setInsightSymbol] = useState('')
-  const [insightMarket, setInsightMarket] = useState('CN')
+  const [insightMarket, setInsightMarket] = useState('TW')
   const [insightName, setInsightName] = useState<string | undefined>(undefined)
   const [insightHasPosition, setInsightHasPosition] = useState(false)
 
@@ -397,7 +397,7 @@ export default function StocksPage() {
   const [showStockForm, setShowStockForm] = useState(false)
   const [stockForm, setStockForm] = useState<StockForm>(emptyStockForm)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchMarket, setSearchMarket] = useState('')  // 搜索市场筛选
+  const [searchMarket, setSearchMarket] = useState('TW')  // 新安裝預設台股；使用者仍可切換
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [searching, setSearching] = useState(false)
@@ -410,7 +410,7 @@ export default function StocksPage() {
 
   // Position form
   const [positionDialogOpen, setPositionDialogOpen] = useState(false)
-  const [positionForm, setPositionForm] = useState<PositionForm>({ account_id: 0, stock_id: 0, cost_price: '', quantity: '', invested_amount: '', trading_style: '', stock_symbol: '', stock_name: '', stock_market: 'CN' })
+  const [positionForm, setPositionForm] = useState<PositionForm>({ account_id: 0, stock_id: 0, cost_price: '', quantity: '', invested_amount: '', trading_style: '', stock_symbol: '', stock_name: '', stock_market: 'TW' })
   const [editPositionId, setEditPositionId] = useState<number | null>(null)
   const [positionDialogAccountId, setPositionDialogAccountId] = useState<number | null>(null)
   const [positionSearchQuery, setPositionSearchQuery] = useState('')
@@ -774,7 +774,7 @@ export default function StocksPage() {
     try {
       const d = new Date(iso)
       if (isNaN(d.getTime())) return iso
-      return d.toLocaleString('zh-CN', {
+      return d.toLocaleString('zh-TW', {
         timeZone: tz || undefined,
         month: '2-digit',
         day: '2-digit',
@@ -1528,7 +1528,7 @@ export default function StocksPage() {
                 <>
                   <div className="w-px h-4 bg-border" />
                   <span className="text-[10px] text-muted-foreground/60">
-                    {lastRefreshTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    {lastRefreshTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </span>
                 </>
               )}
@@ -1613,7 +1613,7 @@ export default function StocksPage() {
           </div>
           {lastRefreshTime && (
             <span className="md:hidden shrink-0 text-[10px] text-muted-foreground/60 font-mono ml-1">
-              {lastRefreshTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              {lastRefreshTime.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           )}
         </div>
@@ -1759,7 +1759,8 @@ export default function StocksPage() {
                 <div className="flex items-center gap-1">
                   {[
                     { value: '', label: '全部' },
-                    { value: 'CN', label: 'A股' },
+                    { value: 'TW', label: '台股' },
+                    { value: 'CN', label: '中國 A 股' },
                     { value: 'HK', label: '港股' },
                     { value: 'US', label: '美股' },
                   ].map(opt => (
@@ -1801,7 +1802,7 @@ export default function StocksPage() {
                   value={searchQuery}
                   onChange={e => handleSearchInput(e.target.value)}
                   onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
-                  placeholder={searchMarket === 'HK' ? '代码或名称，如 00700 或 腾讯' : searchMarket === 'US' ? '代码或名称，如 AAPL 或 苹果' : '代码或名称，如 600519 或 茅台'}
+                  placeholder={searchMarket === 'TW' ? '代號或名稱，例如 2330 或台積電' : searchMarket === 'HK' ? '代號或名稱，例如 00700 或騰訊' : searchMarket === 'US' ? '代號或名稱，例如 AAPL 或 Apple' : '代號或名稱，例如 600519'}
                   className="pl-10"
                   autoComplete="off"
                 />
@@ -2284,7 +2285,8 @@ export default function StocksPage() {
             <div className="flex items-center gap-1">
               {[
                 { value: '', label: '全部', count: stocks.length },
-                { value: 'CN', label: 'A股', count: stocks.filter(s => s.market === 'CN').length },
+                { value: 'TW', label: '台股', count: stocks.filter(s => s.market === 'TW').length },
+                { value: 'CN', label: '中國 A 股', count: stocks.filter(s => s.market === 'CN').length },
                 { value: 'HK', label: '港股', count: stocks.filter(s => s.market === 'HK').length },
                 { value: 'US', label: '美股', count: stocks.filter(s => s.market === 'US').length },
               ].map(opt => (
@@ -2642,7 +2644,8 @@ export default function StocksPage() {
                   <div className="flex items-center gap-1">
                     {[
                       { value: '', label: '全部' },
-                      { value: 'CN', label: 'A股' },
+                      { value: 'TW', label: '台股' },
+                      { value: 'CN', label: '中國 A 股' },
                       { value: 'HK', label: '港股' },
                       { value: 'US', label: '美股' },
                     ].map(opt => (

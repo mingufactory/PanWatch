@@ -58,8 +58,8 @@ class AgentSeedSpec:
 AGENT_SEED_SPECS: tuple[AgentSeedSpec, ...] = (
     AgentSeedSpec(
         name="premarket_outlook",
-        display_name="盘前分析",
-        description="开盘前综合昨日分析和隔夜信息，展望今日走势",
+        display_name="盤前分析",
+        description="開盤前綜合前一交易日分析與隔夜資訊，整理今日展望",
         enabled=False,
         schedule="0 9 * * 1-5",
         execution_mode="batch",
@@ -69,8 +69,8 @@ AGENT_SEED_SPECS: tuple[AgentSeedSpec, ...] = (
     ),
     AgentSeedSpec(
         name="intraday_monitor",
-        display_name="盘中监测",
-        description="交易时段实时监控，AI 智能判断是否有值得关注的信号",
+        display_name="盤中監測",
+        description="交易時段監控行情，由 AI 判斷值得留意的訊號",
         enabled=False,
         schedule="*/5 9-15 * * 1-5",
         execution_mode="single",
@@ -88,8 +88,8 @@ AGENT_SEED_SPECS: tuple[AgentSeedSpec, ...] = (
     ),
     AgentSeedSpec(
         name="daily_report",
-        display_name="收盘复盘",
-        description="每日收盘后生成复盘报告，包含市场回顾、个股复盘和次日关注",
+        display_name="收盤複盤",
+        description="每日收盤後產生複盤報告，包含市場回顧、個股分析與次日重點",
         enabled=True,
         schedule="30 15 * * 1-5",
         execution_mode="batch",
@@ -99,8 +99,8 @@ AGENT_SEED_SPECS: tuple[AgentSeedSpec, ...] = (
     ),
     AgentSeedSpec(
         name="news_digest",
-        display_name="新闻速递（能力）",
-        description="内部能力：提供新闻抓取、去重与主题聚合，不独立调度",
+        display_name="新聞快訊（能力）",
+        description="內部能力：提供新聞擷取、去重與主題彙整，不獨立排程",
         enabled=False,
         schedule="",
         execution_mode="batch",
@@ -116,8 +116,8 @@ AGENT_SEED_SPECS: tuple[AgentSeedSpec, ...] = (
     ),
     AgentSeedSpec(
         name="chart_analyst",
-        display_name="技术分析（能力）",
-        description="内部能力：详情页按需触发图像技术分析，不独立调度",
+        display_name="技術分析（能力）",
+        description="內部能力：在詳細頁面依需求觸發圖表技術分析，不獨立排程",
         enabled=False,
         schedule="",
         execution_mode="single",
@@ -130,8 +130,8 @@ AGENT_SEED_SPECS: tuple[AgentSeedSpec, ...] = (
     AgentSeedSpec(
         name="tradingagents",
         display_name="TradingAgents 深度分析",
-        description="多 Agent 投资决策框架(基本面/情绪/新闻/技术 + 看多看空辩论 + 风控 + PM)。"
-        "单次 3-5 分钟、~$0.05 (deepseek-chat)。需手动触发,默认关闭。",
+        description="多 Agent 投資決策框架（基本面／情緒／新聞／技術、正反方辯論、風險控管與 PM）。"
+        "單次約 3–5 分鐘、約 US$0.05（deepseek-chat）；需手動觸發，預設關閉。",
         enabled=False,
         schedule="",
         execution_mode="single",
@@ -153,4 +153,3 @@ AGENT_SEED_SPECS: tuple[AgentSeedSpec, ...] = (
         },
     ),
 )
-

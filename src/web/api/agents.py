@@ -603,7 +603,7 @@ def export_tradingagents_analysis_pdf(
         .first()
     )
     if not record:
-        raise HTTPException(status_code=404, detail="未找到该深度分析记录")
+        raise HTTPException(status_code=404, detail="找不到此深度分析紀錄")
 
     # 用 raw_data 拼详情页同款完整分节(含 4 分析师全文 + 辩论全文);raw_data 缺失时回退 content
     report_md = assemble_report_markdown(record.raw_data or {}) or (record.content or "")
@@ -620,8 +620,8 @@ def export_tradingagents_analysis_pdf(
 @router.get("/tradingagents/history-comparison")
 def get_tradingagents_history_comparison(
     stock_symbol: str = Query(..., description="股票代码,如 300418"),
-    market: str = Query("CN", description="市场:CN/US/HK"),
-    days: int = Query(90, ge=7, le=365, description="回溯天数"),
+    market: str = Query("TW", description="市場：TW/CN/HK/US"),
+    days: int = Query(90, ge=7, le=365, description="回溯天數"),
 ):
     """某只股票的 TradingAgents 历史决策 vs 实际涨跌对比。
 

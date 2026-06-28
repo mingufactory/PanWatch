@@ -42,7 +42,7 @@ export function formatTime(isoTime?: string | null): string {
   try {
     const date = new Date(isoTime)
     if (isNaN(date.getTime())) return ''
-    return date.toLocaleTimeString('zh-CN', {
+    return date.toLocaleTimeString('zh-TW', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
@@ -62,7 +62,7 @@ export function formatDateTime(isoTime?: string | null): string {
   try {
     const date = new Date(isoTime)
     if (isNaN(date.getTime())) return ''
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString('zh-TW', {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
@@ -84,7 +84,7 @@ export function formatFullDateTime(isoTime?: string | null): string {
   try {
     const date = new Date(isoTime)
     if (isNaN(date.getTime())) return ''
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString('zh-TW', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

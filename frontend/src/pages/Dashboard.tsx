@@ -80,7 +80,7 @@ export default function DashboardPage() {
   const [modal, setModal] = useState<{ open: boolean; symbol: string; market: string; name: string; hasPosition: boolean }>({
     open: false,
     symbol: '',
-    market: 'CN',
+    market: 'TW',
     name: '',
     hasPosition: false,
   })

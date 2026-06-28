@@ -190,7 +190,7 @@ export default function DiscoveryPanel({ monitorStocks, onOpenStock }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="CN">A股</SelectItem>
+                <SelectItem value="CN">中國 A 股</SelectItem>
                 <SelectItem value="HK">港股</SelectItem>
                 <SelectItem value="US">美股</SelectItem>
               </SelectContent>

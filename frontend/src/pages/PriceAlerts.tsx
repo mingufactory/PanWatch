@@ -64,7 +64,7 @@ function fmt(iso?: string | null): string {
   if (!iso) return '--'
   const d = new Date(iso)
   if (isNaN(d.getTime())) return '--'
-  return d.toLocaleString('zh-CN', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleString('zh-TW', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 function conditionText(item: AlertConditionItem): string {
@@ -132,7 +132,7 @@ export default function PriceAlertsPage() {
     }
     const qStockId = Number(params.get('stock_id') || 0)
     const qSymbol = String(params.get('symbol') || '').trim().toUpperCase()
-    const qMarket = String(params.get('market') || '').trim().toUpperCase() || 'CN'
+    const qMarket = String(params.get('market') || '').trim().toUpperCase() || 'TW'
     const qName = String(params.get('name') || '').trim()
 
     const openWithStock = async () => {

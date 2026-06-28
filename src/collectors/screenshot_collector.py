@@ -140,7 +140,7 @@ class ScreenshotCollector:
             # 使用真实的 User-Agent 和反检测设置
             context = await self._browser.new_context(
                 viewport=self.config["viewport"],
-                locale="zh-CN",
+                locale="zh-TW",
                 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 java_script_enabled=True,
                 bypass_csp=True,
