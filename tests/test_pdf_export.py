@@ -68,7 +68,7 @@ def test_assemble_report_markdown_mirrors_detail_page_sections():
         "技术面分析正文XYZ", "情绪面分析正文XYZ", "新闻面分析正文XYZ", "基本面分析正文XYZ",
         "多头观点AAA", "空头观点BBB", "研究主管裁决XYZ",
         "激进CCC", "风控裁决XYZ",
-        "技术分析师", "看多看空辩论", "风控辩论",
+        "技術分析師", "多空辯論", "風險控管辯論",
     ]:
         assert must in md, f"缺少: {must}"
 
