@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from src.config import Settings
 from src.core.paper_trading_engine import (
-    ALL_MARKETS,
+    PAPER_TRADING_MARKETS,
     ENGINE,
     compute_market_cash,
     market_allocations_or_default,
@@ -170,7 +170,7 @@ def _build_equity_curve(
 
 def _account_summary(db: Session, acc: PaperTradingAccount, market: str | None) -> dict:
     """账户汇总。market=None 为全账户（沿用引擎维护的回撤）；否则按该市场子池口径。"""
-    if not market or market not in ALL_MARKETS:
+    if not market or market not in PAPER_TRADING_MARKETS:
         open_positions = (
             db.query(PaperTradingPosition)
             .filter(PaperTradingPosition.status == "open")
@@ -361,7 +361,7 @@ def get_account(market: str | None = None, db: Session = Depends(get_db)):
         db.add(acc)
         db.commit()
         db.refresh(acc)
-    return _account_summary(db, acc, market if market in ALL_MARKETS else None)
+    return _account_summary(db, acc, market if market in PAPER_TRADING_MARKETS else None)
 
 
 @router.get("/positions")
@@ -369,7 +369,7 @@ def list_positions(status: str = "open", market: str | None = None, db: Session 
     query = db.query(PaperTradingPosition)
     if status != "all":
         query = query.filter(PaperTradingPosition.status == status)
-    if market in ALL_MARKETS:
+    if market in PAPER_TRADING_MARKETS:
         query = query.filter(PaperTradingPosition.stock_market == market)
     rows = query.order_by(PaperTradingPosition.opened_at.desc()).all()
     return [_position_response(p) for p in rows]
@@ -378,7 +378,7 @@ def list_positions(status: str = "open", market: str | None = None, db: Session 
 @router.get("/trades")
 def list_trades(limit: int = 50, offset: int = 0, market: str | None = None, db: Session = Depends(get_db)):
     base = db.query(PaperTradingTrade)
-    if market in ALL_MARKETS:
+    if market in PAPER_TRADING_MARKETS:
         base = base.filter(PaperTradingTrade.stock_market == market)
     total = base.count()
     rows = (
@@ -399,7 +399,7 @@ def get_metrics(market: str | None = None, db: Session = Depends(get_db)):
     if not acc:
         return {"account": None, "equity_curve": [], "open_positions": 0, "strategy_performance": []}
 
-    mkt = market if market in ALL_MARKETS else None
+    mkt = market if market in PAPER_TRADING_MARKETS else None
 
     pq = db.query(PaperTradingPosition).filter(PaperTradingPosition.status == "open")
     if mkt:
@@ -468,9 +468,9 @@ def update_settings(body: UpdateSettingsBody, db: Session = Depends(get_db)):
             raise HTTPException(400, f"投资比例合计不能超过 100%（当前 {round(total * 100)}%）")
         acc.market_allocations = alloc
         # 同步派生 excluded_markets（比例 0 即排除），兼容旧读取
-        acc.excluded_markets = [m for m in ALL_MARKETS if alloc.get(m, 0.0) <= 0]
+        acc.excluded_markets = [m for m in PAPER_TRADING_MARKETS if alloc.get(m, 0.0) <= 0]
     elif body.excluded_markets is not None:
-        valid = {"CN", "HK", "US"}
+        valid = set(PAPER_TRADING_MARKETS)
         acc.excluded_markets = [m for m in body.excluded_markets if m in valid]
 
     if body.initial_capital is not None and body.initial_capital > 0:

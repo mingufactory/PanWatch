@@ -98,6 +98,7 @@ class TradingAgentsAgent(BaseAgent):
             get_kline_orchestrator,
             get_quote_orchestrator,
         )
+        from src.core.market_metadata import market_currency, supports_capability
 
         if not context.watchlist:
             raise ValueError("TradingAgents 需要至少 1 只股票")
@@ -121,8 +122,14 @@ class TradingAgentsAgent(BaseAgent):
 
         quotes_t = get_quote_orchestrator().fetch(req)
         klines_t = get_kline_orchestrator().fetch(kline_req)
-        capital_t = get_capital_flow_orchestrator().fetch(req)
-        events_t = get_events_orchestrator().fetch(events_req)
+        capital_t = (
+            get_capital_flow_orchestrator().fetch(req)
+            if supports_capability(stock.market.value, "capital_flow") else asyncio.sleep(0, result=None)
+        )
+        events_t = (
+            get_events_orchestrator().fetch(events_req)
+            if supports_capability(stock.market.value, "events") else asyncio.sleep(0, result=None)
+        )
 
         try:
             quotes, klines, capital, events = await asyncio.gather(
@@ -164,6 +171,10 @@ class TradingAgentsAgent(BaseAgent):
             "financial": financial,
             "technical": technical,
             "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "market_metadata": {
+                "market": stock.market.value,
+                "currency": market_currency(stock.market.value),
+            },
         }
 
     def build_prompt(self, data: dict, context: AgentContext) -> tuple[str, str]:
@@ -254,6 +265,8 @@ class TradingAgentsAgent(BaseAgent):
             market=stock.market.value,
             current_price=cur_price_num,
             industry=quote_data.get("industry", "") if isinstance(quote_data, dict) else "",
+            quote_kind=quote_data.get("quote_kind", "") if isinstance(quote_data, dict) else "",
+            as_of=quote_data.get("as_of", "") if isinstance(quote_data, dict) else "",
         )
         portfolio_part = build_portfolio_context(
             getattr(context, "portfolio", None),

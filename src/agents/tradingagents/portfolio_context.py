@@ -31,6 +31,8 @@ def build_stock_metadata_context(
     market: str = "CN",
     current_price: float | None = None,
     industry: str = "",
+    quote_kind: str = "",
+    as_of: str = "",
 ) -> str:
     """渲染标的元信息(公司名/市场/当前价),强制告诉 LLM 不要从 ticker 反查公司。
 
@@ -42,19 +44,26 @@ def build_stock_metadata_context(
     if not stock_symbol:
         return ""
 
-    market_label = {"CN": "中国 A 股", "HK": "港股", "US": "美股"}.get(market, market)
+    from src.core.market_metadata import market_currency
+
+    market_label = {"TW": "Taiwan", "CN": "中国 A 股", "HK": "港股", "US": "美股"}.get(market, market)
     lines = [
         "[Stock Metadata]",
         f"- Ticker: {stock_symbol}",
         f"- Company name: {stock_name or 'N/A'}",
         f"- Market: {market_label}",
+        f"- Currency: {market_currency(market)}",
     ]
     if industry:
         lines.append(f"- Industry: {industry}")
     if current_price and current_price > 0:
         lines.append(f"- Current price: {current_price:.2f}")
+    if quote_kind:
+        lines.append(f"- Quote kind: {quote_kind}")
+    if as_of:
+        lines.append(f"- Quote as of: {as_of}")
     lines.append(
-        "- IMPORTANT: This is an A-share / HK / cross-market ticker. DO NOT guess the "
+        "- IMPORTANT: The market is explicit. Numeric Taiwan tickers are not A-shares. DO NOT guess the "
         "company from the ticker code; always use the company name above."
     )
     return "\n".join(lines)

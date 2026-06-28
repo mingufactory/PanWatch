@@ -20,6 +20,7 @@ from src.web.models import (
     StrategySignalRun,
 )
 from src.core.backtest.cost_model import CostModel
+from src.core.market_metadata import default_lot_size
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,10 @@ def _safe_float(v: Any) -> float | None:
 # 分市场资金配置（投资比例 → 子池现金）
 # ---------------------------------------------------------------------------
 
+# Public legacy constants retain their three-market shape. TW is included only
+# when explicitly configured, avoiding changes to persisted legacy JSON/API data.
 ALL_MARKETS: tuple[str, ...] = ("CN", "HK", "US")
+PAPER_TRADING_MARKETS: tuple[str, ...] = ("TW", *ALL_MARKETS)
 DEFAULT_ALLOCATIONS: dict[str, float] = {"CN": 0.5, "HK": 0.3, "US": 0.2}
 
 
@@ -115,7 +119,8 @@ def normalize_allocations(raw: dict | None) -> dict[str, float]:
     """补齐三市场、clamp 到 [0,1]，返回 {market: ratio}。"""
     raw = raw or {}
     out: dict[str, float] = {}
-    for m in ALL_MARKETS:
+    markets = PAPER_TRADING_MARKETS if "TW" in raw else ALL_MARKETS
+    for m in markets:
         try:
             v = float(raw.get(m, 0.0) or 0.0)
         except Exception:
@@ -332,7 +337,7 @@ class PaperTradingEngine:
         quotes = self._fetch_quotes_map(syms)
 
         # 预算各市场可用现金（建仓时按市场子池逐笔扣减）
-        market_cash = {m: market_available_cash(db, account, m, alloc) for m in ALL_MARKETS}
+        market_cash = {m: market_available_cash(db, account, m, alloc) for m in PAPER_TRADING_MARKETS}
 
         opened = 0
         for sig in candidates:
@@ -359,6 +364,7 @@ class PaperTradingEngine:
                 price=entry_price,
                 available_cash=avail,
                 cost_model=COST_MODEL,
+                lot=default_lot_size(mkt),
             )
             if quantity <= 0:
                 continue  # 子池额度不足以买入最小一手

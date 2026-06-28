@@ -10,6 +10,7 @@ from src.core.notifier import get_global_proxy
 from src.collectors.discovery_collector import EastMoneyDiscoveryCollector
 from src.web.database import get_db
 from src.web.models import MarketScanSnapshot, Stock
+from src.core.market_metadata import supports_capability
 
 
 router = APIRouter()
@@ -71,6 +72,13 @@ def _normalize_market(market: str) -> str:
     if m not in ("TW", "CN", "HK", "US"):
         raise HTTPException(400, f"不支持的市场: {market}")
     return m
+
+
+def _require_discovery(market: str) -> str:
+    mkt = _normalize_market(market)
+    if not supports_capability(mkt, "discovery"):
+        raise HTTPException(501, f"{mkt} discovery is not supported")
+    return mkt
 
 
 def _latest_snapshot_stocks(db: Session, market: str, limit: int = 120) -> list[dict]:
@@ -238,7 +246,7 @@ async def get_hot_stocks(
     mode: turnover | gainers
     """
 
-    market = _normalize_market(market)
+    market = _require_discovery(market)
     mode = (mode or "turnover").lower()
     if mode not in ("turnover", "gainers"):
         raise HTTPException(400, f"不支持的 mode: {mode}")
@@ -277,7 +285,7 @@ async def get_hot_boards(
     mode: gainers | turnover
     """
 
-    market = _normalize_market(market)
+    market = _require_discovery(market)
     mode = (mode or "gainers").lower()
     if mode not in ("gainers", "turnover", "hot"):
         raise HTTPException(400, f"不支持的 mode: {mode}")
@@ -344,7 +352,7 @@ async def get_board_stocks(
     if not code:
         raise HTTPException(400, "缺少板块代码")
 
-    mkt = _normalize_market(market)
+    mkt = _require_discovery(market)
     mode = (mode or "gainers").lower()
     if mode not in ("gainers", "turnover", "hot"):
         raise HTTPException(400, f"不支持的 mode: {mode}")

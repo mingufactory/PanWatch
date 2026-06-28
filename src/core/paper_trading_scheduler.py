@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def _any_market_trading() -> bool:
     """CN/HK/US 任一在交易时段即为 True。全休市时行情不动,扫描可跳过(行为中性)。"""
-    for m in (MarketCode.CN, MarketCode.HK, MarketCode.US):
+    for m in (MarketCode.TW, MarketCode.CN, MarketCode.HK, MarketCode.US):
         md = MARKETS.get(m)
         if md and md.is_trading_time():
             return True

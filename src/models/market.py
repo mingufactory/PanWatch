@@ -26,6 +26,10 @@ class MarketDef:
     timezone: str
     sessions: list[TradingSession]
     symbol_pattern: str  # 正则，用于校验股票代码格式
+    currency: str = "CNY"
+    board_lot_size: int = 100
+    quote_freshness_seconds: int = 300
+    capabilities: frozenset[str] = field(default_factory=frozenset)
 
     def get_tz(self) -> ZoneInfo:
         return ZoneInfo(self.timezone)
@@ -57,6 +61,9 @@ MARKETS: dict[MarketCode, MarketDef] = {
         sessions=[TradingSession(time(9, 0), time(13, 30))],
         # Conservative syntax fallback; the security master remains authoritative.
         symbol_pattern=r"^[0-9A-Z]{4,6}$",
+        currency="TWD",
+        board_lot_size=1000,
+        capabilities=frozenset({"quote", "kline", "paper_trading", "price_alert"}),
     ),
     MarketCode.CN: MarketDef(
         code=MarketCode.CN,
@@ -67,6 +74,7 @@ MARKETS: dict[MarketCode, MarketDef] = {
             TradingSession(time(13, 0), time(15, 0)),
         ],
         symbol_pattern=r"^[036]\d{5}$",
+        capabilities=frozenset({"quote", "kline", "paper_trading", "price_alert", "capital_flow", "events", "discovery"}),
     ),
     MarketCode.HK: MarketDef(
         code=MarketCode.HK,
@@ -77,6 +85,8 @@ MARKETS: dict[MarketCode, MarketDef] = {
             TradingSession(time(13, 0), time(16, 0)),
         ],
         symbol_pattern=r"^\d{5}$",
+        currency="HKD",
+        capabilities=frozenset({"quote", "kline", "paper_trading", "price_alert", "events"}),
     ),
     MarketCode.US: MarketDef(
         code=MarketCode.US,
@@ -86,6 +96,9 @@ MARKETS: dict[MarketCode, MarketDef] = {
             TradingSession(time(9, 30), time(16, 0)),
         ],
         symbol_pattern=r"^[A-Z]{1,5}$",
+        currency="USD",
+        board_lot_size=1,
+        capabilities=frozenset({"quote", "kline", "paper_trading", "price_alert", "events"}),
     ),
 }
 

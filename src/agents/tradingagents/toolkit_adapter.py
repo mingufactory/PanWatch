@@ -92,6 +92,17 @@ def is_a_share(symbol: str) -> bool:
     return bool(symbol) and len(symbol) == 6 and symbol.isdigit()
 
 
+def _cached_market() -> str:
+    stock = _cache().get("stock")
+    market = getattr(stock, "market", "") if stock is not None else ""
+    return getattr(market, "value", str(market or "")).upper()
+
+
+def is_tw_share(symbol: str) -> bool:
+    """Taiwan identity comes from request metadata, never numeric shape alone."""
+    return bool(symbol) and _cached_market() == "TW"
+
+
 def is_hk_share(symbol: str) -> bool:
     """港股代码判定:5 位纯数字(00241/00700/...)。"""
     return bool(symbol) and len(symbol) == 5 and symbol.isdigit()
@@ -103,7 +114,7 @@ def is_panwatch_routable(symbol: str) -> bool:
     A 股(6 位数字)yfinance 拉不到,港股(5 位数字)yfinance 也要 .HK 后缀,
     都需要 PanWatch 兜底。美股(字母 ticker)继续走 yfinance。
     """
-    return is_a_share(symbol) or is_hk_share(symbol)
+    return is_tw_share(symbol) or is_a_share(symbol) or is_hk_share(symbol)
 
 
 def _looks_like_cn_keyword(symbol: str) -> bool:
@@ -203,8 +214,9 @@ def _patched_route_to_vendor(method_name: str, *args, **kwargs):
         if is_panwatch_routable(cached_symbol):
             symbol = cached_symbol
 
-    # A 股:yfinance/finnhub 拉不到,直接走 PanWatch
-    if is_a_share(symbol) and _cache():
+    # TW and A shares use the already market-scoped PanWatch payload. Checking
+    # TW first prevents six-character Taiwan ETFs from being classified as CN.
+    if (is_tw_share(symbol) or is_a_share(symbol)) and _cache():
         try:
             result = _serve_from_panwatch(method_name, symbol, kwargs, args=args)
             _emit_toolkit_log(
@@ -405,7 +417,7 @@ def _build_panwatch_ohlcv_df(symbol: str, curr_date: str):
     from src.collectors.kline_collector import KlineCollector
     from src.models.market import MarketCode
 
-    market = MarketCode.CN if is_a_share(symbol) else MarketCode.HK
+    market = MarketCode.TW if is_tw_share(symbol) else (MarketCode.CN if is_a_share(symbol) else MarketCode.HK)
     klines = KlineCollector(market).get_klines(symbol, days=750)
     if not klines:
         return None
@@ -515,12 +527,14 @@ def _stock_meta_header(symbol: str) -> str:
     if isinstance(quote, dict):
         industry = quote.get("industry") or ""
 
-    market_label = {"CN": "中国 A 股", "HK": "港股", "US": "美股"}.get(market, market)
+    from src.core.market_metadata import market_currency, quote_kind, quote_is_stale
+
+    market_label = {"TW": "Taiwan", "CN": "中国 A 股", "HK": "港股", "US": "美股"}.get(market, market)
     cur_price = _attr(quote, "current_price", "") or _attr(quote, "price", "")
     change_pct = _attr(quote, "change_pct", "")
 
     lines = [
-        f"[Stock Metadata] symbol={symbol}, name={name or 'N/A'}, market={market_label}",
+        f"[Stock Metadata] symbol={symbol}, name={name or 'N/A'}, market={market_label}, currency={market_currency(market)}",
     ]
     if industry:
         lines.append(f"  Industry: {industry}")
@@ -532,8 +546,13 @@ def _stock_meta_header(symbol: str) -> str:
             )
         except (TypeError, ValueError):
             pass
+    if isinstance(quote, dict):
+        lines.append(
+            f"  Quote: kind={quote_kind(quote)}, as_of={quote.get('as_of') or 'N/A'}, "
+            f"stale={quote_is_stale(quote, market)}"
+        )
     lines.append(
-        "  IMPORTANT: This is an A-share / HK / cross-market ticker. DO NOT guess the company "
+        "  IMPORTANT: Market metadata is authoritative; numeric Taiwan tickers are not A-shares. DO NOT guess the company "
         "from the ticker code alone — use the name above."
     )
     return "\n".join(lines)

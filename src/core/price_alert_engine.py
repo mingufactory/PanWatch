@@ -15,6 +15,7 @@ from src.collectors.kline_collector import KlineCollector, kline_source
 from src.core.notifier import NotifierManager
 from src.core.providers import ProviderRequest, get_quote_orchestrator
 from src.models.market import MarketCode, MARKETS
+from src.core.market_metadata import quote_supports_price_alert
 from src.web.database import SessionLocal
 from src.web.models import NotifyChannel, PriceAlertHit, PriceAlertRule, Stock
 
@@ -353,6 +354,11 @@ class PriceAlertEngine:
                 if not quote:
                     skipped += 1
                     items.append({"rule_id": rule.id, "status": "no_quote"})
+                    continue
+
+                if not quote_supports_price_alert(quote, market):
+                    skipped += 1
+                    items.append({"rule_id": rule.id, "status": "gated", "reason": "stale_or_non_realtime_quote"})
                     continue
 
                 can, reason = self._can_trigger(

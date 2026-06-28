@@ -14,6 +14,7 @@ from src.web.models import Account, PriceAlertRule, Position, Stock
 from src.collectors.akshare_collector import _tencent_symbol, _fetch_tencent_quotes
 from src.collectors.market_http import TTLCache
 from src.models.market import MarketCode
+from src.core.market_metadata import market_currency, position_valuation
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -433,6 +434,7 @@ def get_portfolio_summary(
     grand_total_cost = 0
     grand_available_funds = 0
     grand_daily_pnl = 0
+    totals_by_currency: dict[str, dict[str, float]] = {}
 
     for acc in accounts:
         positions_data = []
@@ -456,6 +458,7 @@ def get_portfolio_summary(
 
             # 根据市场确定汇率
             is_foreign = stock.market in ("HK", "US")
+            currency = market_currency(stock.market)
             if stock.market == "HK":
                 rate = hkd_rate
             elif stock.market == "US":
@@ -473,19 +476,36 @@ def get_portfolio_summary(
             if current_price is not None and prev_close and prev_close > 0:
                 daily_pnl = (current_price - prev_close) * pos.quantity * rate
                 daily_pnl_pct = (current_price - prev_close) / prev_close * 100
-                acc_daily_pnl += daily_pnl
+                if stock.market != "TW":
+                    acc_daily_pnl += daily_pnl
 
             cost = pos.cost_price * pos.quantity
-            cost_cny = cost * rate  # 假设成本价也是原币种
-            acc_cost += cost_cny
+            # Legacy *_cny fields retain their original meaning. TW native values
+            # are exposed separately and must not be mislabeled or mixed as CNY.
+            cost_cny = None if stock.market == "TW" else cost * rate
+            if cost_cny is not None:
+                acc_cost += cost_cny
+
+            native_totals = totals_by_currency.setdefault(
+                currency, {"market_value": 0.0, "cost": 0.0, "pnl": 0.0}
+            )
+            native_totals["cost"] += cost
 
             if current_price is not None:
-                market_value = current_price * pos.quantity  # 原币种市值
-                market_value_cny = market_value * rate  # 人民币市值
-                pnl = market_value_cny - cost_cny
-                pnl_pct = (pnl / cost_cny * 100) if cost_cny > 0 else 0
-
-                acc_market_value += market_value_cny
+                native_value = position_valuation(
+                    price=current_price,
+                    cost_price=pos.cost_price,
+                    quantity=pos.quantity,
+                )
+                market_value = native_value["market_value"]
+                market_value_cny = None if stock.market == "TW" else market_value * rate
+                pnl_native = native_value["pnl"]
+                pnl = pnl_native if stock.market == "TW" else market_value_cny - cost_cny
+                pnl_pct = native_value["pnl_pct"]
+                native_totals["market_value"] += market_value
+                native_totals["pnl"] += pnl_native
+                if market_value_cny is not None:
+                    acc_market_value += market_value_cny
 
             positions_data.append({
                 "id": pos.id,
@@ -493,16 +513,17 @@ def get_portfolio_summary(
                 "symbol": stock.symbol,
                 "name": stock.name,
                 "market": stock.market,
+                "currency": currency,
                 "cost_price": pos.cost_price,
                 "quantity": pos.quantity,
                 "invested_amount": pos.invested_amount,
                 "sort_order": pos.sort_order or 0,
                 "trading_style": pos.trading_style,
                 "current_price": current_price,
-                "current_price_cny": round(current_price * rate, 2) if current_price else None,
+                "current_price_cny": round(current_price * rate, 2) if current_price and stock.market != "TW" else None,
                 "change_pct": change_pct,
                 "market_value": round(market_value, 2) if market_value else None,
-                "market_value_cny": round(market_value_cny, 2) if market_value_cny else None,
+                "market_value_cny": round(market_value_cny, 2) if market_value_cny is not None else None,
                 "pnl": round(pnl, 2) if pnl else None,
                 "pnl_pct": round(pnl_pct, 2) if pnl_pct else None,
                 "daily_pnl": round(daily_pnl, 2) if daily_pnl is not None else None,
@@ -570,6 +591,10 @@ def get_portfolio_summary(
             "HKD_CNY": hkd_rate,
             "USD_CNY": usd_rate,
         },
+        "totals_by_currency": {
+            currency: {key: round(value, 2) for key, value in values.items()}
+            for currency, values in totals_by_currency.items()
+        },
         "quotes": quotes_dict,  # 可选：返回行情数据
     }
 
@@ -589,6 +614,21 @@ def _fetch_quotes_for_stocks(stocks: list[Stock]) -> dict:
         try:
             market_code = MarketCode(market)
         except ValueError:
+            continue
+
+        if market_code == MarketCode.TW:
+            # TW must use its market-scoped provider chain; Tencent symbol
+            # formatting would silently reinterpret numeric tickers as CN.
+            from src.core.providers import ProviderRequest, get_quote_orchestrator
+
+            response = get_quote_orchestrator().fetch_sync(
+                ProviderRequest(
+                    symbols=tuple(s.symbol for s in stock_list), market=market_code.value
+                )
+            )
+            if response.success:
+                for item in response.data or []:
+                    quotes[str(item.get("symbol"))] = item
             continue
 
         symbols = [_tencent_symbol(s.symbol, market_code) for s in stock_list]
